@@ -1,0 +1,1155 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>QueueLess</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout concept: a presentation shell (tabs: prototype / artboards / case study) around a fixed-palette 393x852 phone UI.
+   Page chrome is themed; the phone UI always uses the QueueLess brand palette. */
+:root{
+  --bg:#EDF1F7;--surface:#FFFFFF;--surface2:#F5F8FC;--ink:#1E293B;--mute:#566780;--line:#D5DEEA;
+  --head:#142D4E;--accent:#0B7A66;--accent-tint:#E4F5F1;--topbar:#142D4E;--note-bg:#FFF5DC;--note-ink:#6B4700;--note-line:#EBCB7A;
+  --shadow:0 1px 2px rgba(20,45,78,.06),0 12px 32px -12px rgba(20,45,78,.18);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0A1424;--surface:#102036;--surface2:#0C192C;--ink:#E5ECF6;--mute:#9DAEC6;--line:#25395A;
+  --head:#A9C8F2;--accent:#52D6BB;--accent-tint:#0F3430;--topbar:#0A1B31;--note-bg:#2B2210;--note-ink:#F2D58E;--note-line:#5C4818;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px -12px rgba(0,0,0,.6);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0A1424;--surface:#102036;--surface2:#0C192C;--ink:#E5ECF6;--mute:#9DAEC6;--line:#25395A;
+  --head:#A9C8F2;--accent:#52D6BB;--accent-tint:#0F3430;--topbar:#0A1B31;--note-bg:#2B2210;--note-ink:#F2D58E;--note-line:#5C4818;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px -12px rgba(0,0,0,.6);color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--topbar);z-index:60}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+h1,h2,h3,h4,p,ul,ol{margin:0}
+ul,ol{padding:0;list-style:none}
+:focus-visible{outline:3px solid #3B82F6;outline-offset:2px}
+
+/* ---------- Presentation shell ---------- */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:var(--topbar);color:#fff}
+.topbar-in{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:24px;min-height:64px;padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand b{font-size:17px;font-weight:700;letter-spacing:-.2px}
+.brand small{display:block;font-size:12px;color:#B7C6DB;font-weight:500;line-height:1.2}
+.tabs{display:flex;gap:4px;margin-left:auto;background:rgba(255,255,255,.08);padding:4px;border-radius:14px}
+.tabs button{height:40px;padding:0 16px;border-radius:10px;font-weight:600;font-size:14px;color:#C9D6E8;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:#fff;color:#142D4E}
+.tabs .s{display:none}
+.sec{max-width:1280px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.h-sec{font-size:28px;line-height:1.2;font-weight:700;letter-spacing:-.4px;color:var(--head);text-wrap:balance}
+.lead{color:var(--mute);max-width:64ch}
+
+/* prototype */
+.proto{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:48px;align-items:start}
+.guide{position:sticky;top:96px;display:flex;flex-direction:column;gap:24px}
+.guide h2{font-size:24px;font-weight:700;color:var(--head);letter-spacing:-.3px;line-height:1.25;margin-top:8px}
+.steps{display:flex;flex-direction:column;gap:4px}
+.steps li{display:flex;gap:12px;align-items:flex-start;padding:8px 12px;border-radius:12px;color:var(--mute);font-size:14px;line-height:1.4}
+.steps .dot{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700;margin-top:-1px}
+.steps li.done{color:var(--ink)}
+.steps li.done .dot{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.steps li.now{background:var(--surface);box-shadow:var(--shadow);color:var(--ink);font-weight:600}
+.steps li.now .dot{border-color:var(--head);color:var(--head)}
+.btn-reset{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 24px;border-radius:14px;background:var(--head);color:var(--surface);font-weight:600;font-size:15px;align-self:flex-start}
+:root[data-theme="dark"] .btn-reset{color:#0A1424}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn-reset{color:#0A1424}}
+.note{background:var(--note-bg);border:1px solid var(--note-line);color:var(--note-ink);border-radius:14px;padding:16px;font-size:13px;line-height:1.5}
+.stage{display:flex;justify-content:center;align-items:flex-start;padding:24px 0;border-radius:32px;background:radial-gradient(120% 80% at 50% 0,var(--surface) 0,var(--surface2) 60%,transparent 100%)}
+.phone-box{position:relative;flex:none}
+
+/* ---------- QueueLess app UI (fixed brand palette) ---------- */
+.q{--navy:#142D4E;--white:#FFFFFF;--bg:#F7F9FC;--teal:#16A085;--ink:#1E293B;--mute:#64748B;--err:#DC5252;
+  --teal-deep:#0B7A66;--teal-tint:#E4F5F1;--navy-tint:#E8EDF4;--err-deep:#B03A3A;--err-tint:#FCEBEB;--line:#E2E8F0;--grey:#EEF2F6;
+  --sh:0 1px 2px rgba(20,45,78,.06),0 6px 20px rgba(20,45,78,.06);--ts:1;
+  font-family:Inter,system-ui,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums;
+  --f-cap:calc(12px*var(--ts));--f-sm:calc(13px*var(--ts));--f-md:calc(14px*var(--ts));--f-body:calc(15px*var(--ts));--f-btn:calc(16px*var(--ts))}
+.q.lg{--ts:1.14}
+.phone{position:relative;width:413px;height:872px;border-radius:64px;background:#0B1B33;padding:10px;box-shadow:inset 0 0 0 2px #243B5E,0 40px 60px -28px rgba(11,27,51,.5),0 14px 28px -14px rgba(11,27,51,.35);transform-origin:0 0;flex:none}
+.screen{position:relative;width:393px;height:852px;border-radius:54px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column}
+.q .sb{position:absolute;top:0;left:0;right:0;height:48px;padding:15px 30px 0 36px;display:flex;justify-content:space-between;align-items:flex-start;font-weight:600;font-size:15px;z-index:40;pointer-events:none;color:var(--ink)}
+.q .sb.dk{color:#fff}
+.q .sb i{display:flex;gap:6px;align-items:center;font-style:normal;margin-top:2px}
+.q .isl{position:absolute;top:11px;left:50%;width:112px;height:32px;margin-left:-56px;border-radius:20px;background:#05080F;z-index:41}
+.q .hi{position:absolute;bottom:8px;left:50%;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:var(--ink);opacity:.9;z-index:40;pointer-events:none}
+.q .view{flex:1;min-height:0;overflow-y:auto;padding-top:48px;scrollbar-width:none;display:flex;flex-direction:column}
+.q .view::-webkit-scrollbar{display:none}
+.q .view>*{flex-shrink:0}
+.q .view.home{padding-top:0}
+.q .view.enter{animation:vin .32s cubic-bezier(.2,.8,.2,1)}
+@keyframes vin{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+.q .pad{padding:0 24px}
+.q .grow{flex:1;min-width:0}
+.q button{-webkit-tap-highlight-color:transparent}
+.q .hd{display:flex;align-items:center;gap:8px;padding:8px 24px 8px 16px;min-height:64px}
+.q .hd h1{font-size:calc(18px*var(--ts));font-weight:700;letter-spacing:-.2px;flex:1}
+.q .ib{width:48px;height:48px;border-radius:16px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;color:var(--navy);flex:none}
+.q .ib.plain{border:0;background:rgba(255,255,255,.12);color:#fff}
+.q .t-sub{color:var(--mute);font-size:var(--f-md)}
+.q .ic{flex:none}
+
+/* buttons */
+.q .btn{height:56px;width:100%;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:var(--f-btn);background:var(--navy);color:#fff;box-shadow:0 6px 16px -6px rgba(20,45,78,.5);transition:transform .12s,background .12s}
+.q .btn:active{transform:scale(.98)}
+.q .btn.sm{height:48px;border-radius:14px;font-size:var(--f-body);box-shadow:none}
+.q .btn.bsec{background:#fff;color:var(--navy);border:1.5px solid #C9D3E1;box-shadow:none}
+.q .btn.dng{background:#fff;color:var(--err-deep);border:1.5px solid #EBB8B8;box-shadow:none}
+.q .btn.dngf{background:var(--err-deep);box-shadow:none}
+.q .btn.teal{background:var(--teal-deep);box-shadow:none}
+.q .btn.dis{background:#E2E8F0;color:#586579;box-shadow:none;cursor:not-allowed}
+.q .btn.ghost{background:transparent;color:var(--navy);box-shadow:none}
+.q .ft{padding:16px 24px 32px;background:linear-gradient(180deg,rgba(247,249,252,0),var(--bg) 24%);display:flex;flex-direction:column;gap:8px;flex:none}
+
+/* cards, pills, icons */
+.q .card{background:#fff;border-radius:20px;box-shadow:var(--sh)}
+.q .ico{width:48px;height:48px;border-radius:16px;background:var(--navy-tint);color:var(--navy);display:grid;place-items:center;flex:none}
+.q .ico.t{background:var(--teal-tint);color:var(--teal-deep)}
+.q .pill{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:12px;font-weight:600;font-size:var(--f-cap);white-space:nowrap;flex:none}
+.q .p-teal{background:var(--teal-tint);color:var(--teal-deep)}
+.q .p-navy{background:var(--navy-tint);color:var(--navy)}
+.q .p-grey{background:var(--grey);color:#475569}
+.q .p-err{background:var(--err-tint);color:var(--err-deep)}
+.q .lbl{font-size:var(--f-cap);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.q .sh{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 8px}
+.q .sh h2{font-size:calc(18px*var(--ts));font-weight:700;letter-spacing:-.2px}
+
+/* home */
+.q .hero{background:var(--navy);color:#fff;padding:48px 24px 24px;border-radius:0 0 32px 32px;position:relative;overflow:hidden}
+.q .hero::after{content:"";position:absolute;right:-64px;top:-48px;width:208px;height:208px;border-radius:50%;border:32px solid rgba(22,160,133,.22)}
+.q .hero-top{display:flex;align-items:center;gap:8px;position:relative;z-index:1}
+.q .wm{font-weight:700;font-size:calc(18px*var(--ts));letter-spacing:-.3px}
+.q .av{width:40px;height:40px;border-radius:50%;background:#fff;color:var(--navy);font-weight:700;font-size:var(--f-md);display:grid;place-items:center}
+.q .wmw{flex:1;line-height:1.2}.q .wmw .wm{display:block}.q .wmw small{display:block;font-size:var(--f-sm);color:#B9C8DC;font-weight:500}
+.q .hero h1{font-size:calc(32px*var(--ts));line-height:1.15;letter-spacing:-.8px;font-weight:800;margin-top:16px;position:relative;z-index:1}
+.q .hero p{margin-top:8px;font-size:var(--f-md);line-height:1.5;color:#D3DEEC;max-width:290px;position:relative;z-index:1}
+.q .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.q .svc{display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;padding:12px 16px;border-radius:20px;background:#fff;box-shadow:var(--sh);transition:transform .12s}
+.q .svc:active{transform:scale(.98)}
+.q .svc .ico{width:40px;height:40px;border-radius:12px}
+.q .svc b{font-size:var(--f-body);font-weight:600;line-height:1.2;display:block}
+.q .svc .w{font-size:var(--f-cap);color:var(--teal-deep);font-weight:600;display:flex;gap:4px;align-items:center;margin-top:2px}
+.q .up{padding:16px;display:flex;flex-direction:column;gap:8px}
+.q .up-r{display:flex;align-items:center;gap:12px}
+.q .up-r b{display:block;font-size:var(--f-btn);font-weight:700;line-height:1.25}
+.q .up-r .sub{font-size:var(--f-sm);color:var(--mute)}
+.q .up-m{display:flex;justify-content:space-between;gap:8px;font-size:var(--f-sm);color:var(--mute);padding:8px 0;border-top:1px dashed #D3DBE7}
+.q .up-m span{display:inline-flex;gap:4px;align-items:center;min-width:0}
+.q .up-m b{color:var(--ink);font-weight:700}
+.q .tabbar{height:80px;flex:none;background:#fff;border-top:1px solid var(--line);display:flex;padding:8px 16px 20px;z-index:20}
+.q .tb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:600;font-size:var(--f-cap);color:#64748B;position:relative}
+.q .tb[aria-current="page"]{color:var(--navy)}
+.q .tb[aria-current="page"]::before{content:"";position:absolute;top:-9px;width:32px;height:3px;border-radius:0 0 3px 3px;background:var(--teal)}
+
+/* details */
+.q .dhero{padding:24px;display:flex;flex-direction:column;gap:16px}
+.q .dhero h2{font-size:calc(24px*var(--ts));font-weight:800;letter-spacing:-.5px;line-height:1.2}
+.q .dhero p{font-size:var(--f-md);color:#475569;line-height:1.55}
+.q .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.q .stat{background:var(--bg);border-radius:14px;padding:12px 8px;text-align:center}
+.q .stat b{display:block;font-size:calc(17px*var(--ts));font-weight:700;color:var(--navy)}
+.q .stat span{font-size:var(--f-cap);color:var(--mute);font-weight:500}
+.q .docs{display:flex;flex-direction:column;gap:12px}
+.q .doc{display:flex;gap:12px;align-items:flex-start}
+.q .doc .ck{width:24px;height:24px;border-radius:50%;background:var(--teal-tint);color:var(--teal-deep);display:grid;place-items:center;flex:none;margin-top:1px}
+.q .doc b{display:block;font-size:var(--f-body);font-weight:600;line-height:1.3}
+.q .doc span{font-size:var(--f-sm);color:var(--mute)}
+
+/* slots */
+.q .chip-s{display:flex;align-items:center;gap:12px;padding:8px 16px;border-radius:16px;background:#fff;box-shadow:var(--sh)}
+.q .chip-s b{display:block;font-size:var(--f-body);font-weight:600;line-height:1.2}
+.q .chip-s span.s{font-size:var(--f-sm);color:var(--mute)}
+.q .dates{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.q .dt{height:56px;border-radius:16px;background:#fff;border:1.5px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;color:var(--ink)}
+.q .dt span{font-size:var(--f-cap);font-weight:600;color:var(--mute)}
+.q .dt b{font-size:calc(20px*var(--ts));font-weight:700;line-height:1.2}
+.q .dt[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.q .dt[aria-pressed="true"] span{color:#C3D1E4}
+.q .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.q .sl{height:48px;border-radius:14px;background:#fff;border:1.5px solid #C9D3E1;font-weight:600;font-size:var(--f-md);color:var(--navy);display:flex;align-items:center;justify-content:center;gap:4px;position:relative}
+.q .sl[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.q .sl.full{background:repeating-linear-gradient(135deg,#F1F4F8 0 6px,#E8ECF2 6px 12px);border:1.5px dashed #CBD3DF;color:#6B778A;flex-direction:column;gap:0;line-height:1.15}
+.q .sl.full .tm{text-decoration:line-through;text-decoration-thickness:1.5px}
+.q .sl.full small{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;display:block;color:#586579}
+.q .sl.shake{animation:shake .4s}
+@keyframes shake{20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+.q .legend{display:flex;gap:16px;font-size:var(--f-cap);color:var(--mute);font-weight:500}
+.q .legend span{display:inline-flex;gap:8px;align-items:center}
+.q .legend i{width:16px;height:16px;border-radius:6px;display:block}
+.q .err{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-radius:16px;background:var(--err-tint);border:1px solid #F2C4C4;color:var(--err-deep)}
+.q .err b{display:block;font-size:var(--f-md);font-weight:700;line-height:1.3}
+.q .err span.m{font-size:var(--f-sm);line-height:1.4;color:#7F2B2B}
+.q .err.in{animation:vin .25s}
+.q .sum{display:flex;align-items:center;gap:8px;font-size:var(--f-md);color:var(--mute);justify-content:center;min-height:24px}
+.q .sum b{color:var(--ink);font-weight:600}
+
+/* token */
+.q .ok{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:8px 24px 24px}
+.q .ok .big{width:64px;height:64px;border-radius:50%;background:var(--teal-tint);display:grid;place-items:center;color:var(--teal-deep);position:relative}
+.q .ok .big::after{content:"";position:absolute;inset:-8px;border-radius:50%;border:2px solid rgba(22,160,133,.25)}
+.q .ok h1{font-size:calc(24px*var(--ts));font-weight:800;letter-spacing:-.5px;margin-top:8px}
+.q .ticket{background:#fff;border-radius:28px;box-shadow:var(--sh);position:relative}
+.q .ticket .top{padding:24px 24px 16px;text-align:center}
+.q .tok{font-size:calc(64px*var(--ts));font-weight:800;letter-spacing:-2px;line-height:1.05;color:var(--navy);margin-top:4px;white-space:nowrap}
+.q .tok em{font-style:normal;color:var(--teal-deep)}
+.q .tear{height:0;border-top:2px dashed #D3DBE7;margin:0 24px;position:relative}
+.q .tear::before,.q .tear::after{content:"";position:absolute;top:-14px;width:24px;height:24px;border-radius:50%;background:var(--bg)}
+.q .tear::before{left:-36px}.q .tear::after{right:-36px}
+.q .rows{padding:8px 24px 16px}
+.q .row{display:flex;justify-content:space-between;align-items:center;gap:16px;min-height:48px;font-size:var(--f-md);border-bottom:1px solid #EEF2F6}
+.q .row:last-child{border-bottom:0}
+.q .row span{color:var(--mute)}
+.q .row b{font-weight:600;text-align:right}
+
+/* queue */
+.q .qhero{background:var(--navy);color:#fff;border-radius:28px;padding:24px;position:relative;overflow:hidden}
+.q .qhero.turn{background:var(--teal-deep)}
+.q .qhero::after{content:"";position:absolute;right:-48px;bottom:-72px;width:176px;height:176px;border-radius:50%;border:28px solid rgba(255,255,255,.07)}
+.q .qhero .lbl{color:#B9C8DC}
+.q .qhero.turn .lbl{color:#CBEFE7}
+.q .qhero .tok{color:#fff;font-size:calc(56px*var(--ts))}
+.q .qhero .tok em{color:#7FE0CB}
+.q .qhero.turn .tok em{color:#fff}
+.q .qrow{display:flex;justify-content:space-between;align-items:center;gap:8px;position:relative;z-index:1}
+.q .pill.on-d{background:rgba(255,255,255,.14);color:#fff}
+.q .serving{display:flex;align-items:center;gap:16px;padding:16px}
+.q .serving b.n{font-size:calc(28px*var(--ts));font-weight:800;color:var(--navy);letter-spacing:-.8px;line-height:1.1;display:block}
+.q .live{width:12px;height:12px;border-radius:50%;background:var(--teal);position:relative;flex:none}
+.q .live::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--teal);opacity:.0;animation:pulse 1.8s infinite}
+@keyframes pulse{0%{transform:scale(.6);opacity:.7}100%{transform:scale(1.5);opacity:0}}
+.q .tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.q .tile{padding:16px}
+.q .tile b{display:block;font-size:calc(32px*var(--ts));font-weight:800;color:var(--navy);letter-spacing:-.8px;line-height:1.15;margin-top:4px}
+.q .tile b small{font-size:var(--f-md);font-weight:600;color:var(--mute);letter-spacing:0;margin-left:4px}
+.q .prog{padding:16px}
+.q .bar{height:12px;border-radius:6px;background:var(--navy-tint);overflow:hidden;margin:12px 0 8px}
+.q .bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--teal),#2BC4A6);transition:width .6s cubic-bezier(.3,.8,.3,1)}
+.q .bump{animation:bump .5s}
+@keyframes bump{40%{transform:scale(1.12);color:var(--teal-deep)}}
+.q .cap{font-size:var(--f-cap);color:var(--mute);text-align:center}
+
+/* bookings */
+.q .seg{display:flex;background:var(--navy-tint);padding:4px;border-radius:16px;gap:4px}
+.q .seg button{flex:1;height:40px;border-radius:12px;font-weight:600;font-size:var(--f-md);color:#475569;display:flex;align-items:center;justify-content:center;gap:8px}
+.q .seg button[aria-pressed="true"]{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(20,45,78,.15)}
+.q .seg em{font-style:normal;font-size:var(--f-cap);background:var(--navy);color:#fff;min-width:20px;height:20px;padding:0 6px;border-radius:10px;display:grid;place-items:center}
+.q .bk{padding:16px;display:flex;flex-direction:column;gap:12px}
+.q .bk.hl{box-shadow:0 0 0 2px var(--teal),var(--sh)}
+.q .bk-h{display:flex;gap:12px;align-items:center}
+.q .bk-h b{display:block;font-size:var(--f-btn);font-weight:700;line-height:1.25}
+.q .bk-h .s{font-size:var(--f-sm);color:var(--mute)}
+.q .bk-m{display:flex;justify-content:space-between;font-size:var(--f-sm);color:var(--mute);padding-top:12px;border-top:1px dashed #D3DBE7;gap:8px}
+.q .bk-m b{color:var(--ink);font-weight:700}
+.q .bk-m span{display:inline-flex;gap:4px;align-items:center}
+.q .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.q .empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:32px 24px}
+.q .empty .art{width:96px;height:96px;border-radius:50%;background:var(--navy-tint);display:grid;place-items:center;color:var(--navy);margin-bottom:8px;position:relative}
+.q .empty .art::after{content:"";position:absolute;inset:-12px;border-radius:50%;border:2px dashed #C9D3E1}
+.q .empty h2{font-size:calc(20px*var(--ts));font-weight:700;letter-spacing:-.3px}
+.q .empty p{font-size:var(--f-md);color:var(--mute);line-height:1.5;max-width:264px;margin-bottom:16px}
+
+/* profile */
+.q .prof{padding:16px;display:flex;align-items:center;gap:16px}
+.q .prof .big{width:64px;height:64px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:700;font-size:calc(22px*var(--ts));flex:none;box-shadow:0 0 0 4px var(--teal-tint)}
+.q .prof b{display:block;font-size:calc(20px*var(--ts));font-weight:700;letter-spacing:-.3px;line-height:1.2}
+.q .list{padding:0 16px}
+.q .li{display:flex;align-items:center;gap:12px;min-height:48px;border-bottom:1px solid #EEF2F6;font-size:var(--f-body)}
+.q .li:last-child{border-bottom:0}
+.q .li .k{color:var(--mute);display:grid;place-items:center;width:24px}
+.q .li .v{color:var(--mute);font-size:var(--f-md);text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.q .li .t{flex:1;font-weight:500;line-height:1.3}
+.q .li .t small{display:block;font-size:var(--f-cap);color:var(--mute);font-weight:400}
+.q .sw{width:52px;height:32px;border-radius:16px;background:#CBD5E1;position:relative;flex:none;transition:background .2s}
+.q .sw::after{content:"";position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.q .sw[aria-checked="true"]{background:var(--teal-deep)}
+.q .sw[aria-checked="true"]::after{transform:translateX(20px)}
+.q .swb{margin:-8px;padding:8px;display:grid;place-items:center}
+
+/* overlays */
+.q .scrim{position:absolute;inset:0;background:rgba(10,24,44,.5);z-index:50}
+.q .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:32px 32px 0 0;padding:16px 24px 40px;z-index:51;display:flex;flex-direction:column;gap:8px;box-shadow:0 -12px 40px rgba(10,24,44,.25)}
+.q .sheet.fx{animation:up .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.q .sheet .grab{width:40px;height:4px;border-radius:2px;background:#CBD5E1;margin:0 auto 16px}
+.q .sheet .ico{border-radius:50%;margin-bottom:8px}
+.q .sheet h2{font-size:calc(22px*var(--ts));font-weight:800;letter-spacing:-.4px}
+.q .sheet p{font-size:var(--f-body);color:#475569;line-height:1.5;margin-bottom:16px}
+.q .load{position:absolute;inset:0;background:rgba(247,249,252,.86);backdrop-filter:blur(2px);z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.q .load b{font-size:var(--f-body);font-weight:600}
+.q .spin{width:48px;height:48px;border-radius:50%;border:5px solid var(--navy-tint);border-top-color:var(--teal);animation:rot .8s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+.q .toast{position:absolute;left:24px;right:24px;bottom:96px;z-index:55;background:var(--navy);color:#fff;border-radius:16px;padding:12px 16px;display:flex;gap:12px;align-items:center;font-size:var(--f-md);font-weight:500;box-shadow:0 12px 28px -8px rgba(10,24,44,.5)}
+.q .toast.fx{animation:vin .3s}
+.q .toast .c{width:24px;height:24px;border-radius:50%;background:var(--teal);display:grid;place-items:center;flex:none}
+.q .push{position:absolute;left:12px;right:12px;top:56px;z-index:58;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);border-radius:24px;padding:12px 16px;display:flex;gap:12px;align-items:center;box-shadow:0 16px 40px -8px rgba(10,24,44,.35);text-align:left;width:calc(100% - 24px)}
+.q .push.fx{animation:drop .4s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes drop{from{transform:translateY(-120%);opacity:0}to{transform:none;opacity:1}}
+.q .push b{display:block;font-size:var(--f-md);font-weight:700;line-height:1.3}
+.q .push span.m{font-size:var(--f-sm);color:#475569;line-height:1.35;display:block}
+.q .push small{font-size:var(--f-cap);color:var(--mute);margin-left:auto;align-self:flex-start;flex:none}
+.q .out{position:absolute;inset:0;z-index:70;background:var(--navy);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center}
+.q .out h2{font-size:calc(26px*var(--ts));font-weight:800;letter-spacing:-.5px;margin-top:16px}
+.q .out p{color:#C3D1E4;font-size:var(--f-body);max-width:260px;margin-bottom:16px}
+.q .out .btn{background:#fff;color:var(--navy)}
+.q .sk{background:linear-gradient(90deg,#E6ECF4 0,#F3F6FA 50%,#E6ECF4 100%);background-size:200% 100%;animation:shm 1.3s linear infinite;border-radius:16px}
+@keyframes shm{to{background-position:-200% 0}}
+.q.rm *,.q.rm *::before,.q.rm *::after{animation:none!important;transition:none!important}
+.q.rm .spin{animation:rot 2s linear infinite!important}
+.q.rm .sk{animation:none!important}
+
+/* ---------- Artboards ---------- */
+.ab-scale{--ab:.8}
+.abgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(calc(413px*var(--ab)),1fr));gap:40px 24px;justify-items:center;margin-top:24px}
+.fig{margin:0;width:calc(413px*var(--ab))}
+.fig .box{width:100%;height:calc(872px*var(--ab))}
+.fig .phone{transform:scale(var(--ab))}
+.fig figcaption{margin-top:16px;font-size:14px;color:var(--mute);line-height:1.4}
+.fig figcaption b{display:block;color:var(--head);font-size:15px;font-weight:700}
+.block-h{margin-top:64px;display:flex;flex-direction:column;gap:8px}
+.block-h h2{font-size:22px;font-weight:700;color:var(--head);letter-spacing:-.3px}
+.qds{background:#F7F9FC;border:1px solid var(--line);border-radius:24px;padding:32px;margin-top:24px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:32px}
+.qds>*{min-width:0}
+.qds h3{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748B;margin-bottom:16px}
+.qds .c-col{grid-column:span 12}
+.qds .c-6{grid-column:span 6}
+.qds .c-4{grid-column:span 4}
+.qds .c-8{grid-column:span 8}
+.sw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(136px,1fr));gap:12px}
+.swatch{border-radius:16px;background:#fff;box-shadow:var(--sh);overflow:hidden;font-size:13px}
+.swatch i{display:block;height:64px;border-bottom:1px solid rgba(0,0,0,.06)}
+.swatch div{padding:8px 12px 12px;line-height:1.35}
+.swatch b{display:block;font-size:14px}
+.swatch code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#475569}
+.swatch span{display:block;color:#64748B;font-size:12px}
+.type-t{width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px}
+.type-t td{padding:8px 0;border-bottom:1px solid #E2E8F0;vertical-align:baseline}
+.type-t td:first-child{color:#1E293B;padding-right:16px}
+.type-t td:last-child{color:#64748B;text-align:right;white-space:nowrap;padding-left:16px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.sp{display:flex;flex-direction:column;gap:8px}
+.sp div{display:flex;align-items:center;gap:16px;font-size:12px;color:#64748B;font-family:ui-monospace,Menlo,monospace}
+.sp i{display:block;height:16px;background:var(--teal);border-radius:4px;opacity:.85}
+.sp b{width:48px;color:#1E293B;font-weight:600}
+.spec-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.spec-row .btn{width:auto;min-width:144px;padding:0 24px;pointer-events:none}
+.icons{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:8px}
+.icons span{aspect-ratio:1;border-radius:14px;background:#fff;box-shadow:var(--sh);display:grid;place-items:center;color:#142D4E}
+.cap-s{font-size:12px;color:#64748B;margin-top:12px;line-height:1.5}
+
+/* ---------- Case study ---------- */
+.cs{display:grid;grid-template-columns:220px minmax(0,1fr);gap:64px;align-items:start}
+.toc{position:sticky;top:96px;display:flex;flex-direction:column;gap:2px;font-size:14px}
+.toc a{color:var(--mute);text-decoration:none;padding:6px 12px;border-radius:10px;line-height:1.35;display:flex;gap:8px}
+.toc a:hover{background:var(--surface);color:var(--ink)}
+.toc a span{color:var(--accent);font-weight:600;width:20px;flex:none}
+.cs-body{min-width:0;max-width:820px;display:flex;flex-direction:column;gap:64px}
+.cs h2{font-size:26px;font-weight:700;letter-spacing:-.4px;color:var(--head);line-height:1.2;scroll-margin-top:96px;display:flex;gap:12px;align-items:baseline;text-wrap:balance}
+.cs h2 .n{font-size:14px;font-weight:700;color:var(--accent);letter-spacing:.04em;flex:none;min-width:24px}
+.cs h3{font-size:16px;font-weight:700;color:var(--head);margin-bottom:8px}
+.cs section>*+*{margin-top:16px}
+.cs p{max-width:68ch;color:var(--ink)}
+.cs .muted{color:var(--mute)}
+.badge{display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 12px;border-radius:14px;font-size:12px;font-weight:700;background:var(--note-bg);color:var(--note-ink);border:1px solid var(--note-line);letter-spacing:.02em}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.fact,.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
+.fact small{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin-bottom:4px}
+.fact b{font-weight:600}
+.panel.hl{background:var(--accent-tint);border-color:transparent}
+.cols2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.cols3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.bul{display:flex;flex-direction:column;gap:8px}
+.bul li{position:relative;padding-left:20px;line-height:1.5}
+.bul li::before{content:"";position:absolute;left:0;top:.62em;width:8px;height:8px;border-radius:2px;background:var(--accent)}
+.persona{display:grid;grid-template-columns:220px minmax(0,1fr);gap:24px;background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:24px;box-shadow:var(--shadow)}
+.persona .pf{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.persona .pav{width:72px;height:72px;border-radius:50%;background:#142D4E;color:#fff;display:grid;place-items:center;font-size:24px;font-weight:700;box-shadow:0 0 0 5px var(--accent-tint)}
+.tbl{width:100%;border-collapse:collapse;font-size:14px;min-width:640px}
+.tbl th{text-align:left;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);padding:8px 16px 8px 0;border-bottom:2px solid var(--line);font-weight:700}
+.tbl td{padding:16px 16px 16px 0;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5}
+.tbl td:first-child{font-weight:600;color:var(--head)}
+.scroll-x{overflow-x:auto;border-radius:8px}
+.jr{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.jr>div{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.45}
+.jr h4{font-size:15px;color:var(--head);font-weight:700}
+.jr small{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin-bottom:2px}
+.jr .scr{margin-top:auto;font-size:12px;font-weight:600;color:var(--accent)}
+.flow-wrap{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px;overflow-x:auto}
+.flow{min-width:900px;display:block;width:100%;height:auto}
+.fl-n{fill:var(--surface2);stroke:var(--head);stroke-width:1.5}
+.fl-n.a{fill:var(--head)}
+.fl-t{fill:var(--ink);font:600 13px Inter,sans-serif}
+.fl-n.a+.fl-t{fill:var(--surface)}
+.fl-s{fill:var(--mute);font:500 11px Inter,sans-serif}
+.fl-e{fill:var(--err-fill,var(--surface2));stroke:var(--mute);stroke-width:1.2;stroke-dasharray:4 3}
+.fl-l{stroke:var(--mute);stroke-width:1.5;fill:none}
+.fl-ar{fill:var(--mute)}
+.ia{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.ia>div{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
+.ia h4{font-size:15px;color:var(--head);margin-bottom:12px;display:flex;gap:8px;align-items:center}
+.ia ul ul{margin:4px 0 4px 16px;padding-left:12px;border-left:2px solid var(--line)}
+.ia li{font-size:14px;padding:4px 0;color:var(--ink);line-height:1.4}
+.ia li li{color:var(--mute)}
+.ia-root{background:var(--head);color:var(--surface);border-radius:14px;padding:12px 16px;font-weight:700;display:inline-block;margin-bottom:16px}
+:root[data-theme="dark"] .ia-root{color:#0A1424}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ia-root{color:#0A1424}}
+.dec{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.dec>div{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
+.dec h3{margin-bottom:8px}
+.dec p{font-size:14px;color:var(--mute);line-height:1.55}
+.ct{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.ct div{border-radius:12px;padding:12px;font-size:12px;line-height:1.4;font-weight:600;display:flex;flex-direction:column;gap:2px}
+.ct b{font-size:14px}
+.ct span{font-family:ui-monospace,Menlo,monospace;font-weight:500;opacity:.9}
+.road{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.road>div{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
+.road h3{display:flex;justify-content:space-between;align-items:center}
+.road h3 span{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+
+@media (max-width:1000px){
+  .proto{grid-template-columns:minmax(0,1fr);gap:32px}
+  .guide{position:static;order:2}
+  .stage{order:1}
+  .cs{grid-template-columns:minmax(0,1fr)}
+  .toc{display:none}
+  .jr{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ia{grid-template-columns:minmax(0,1fr)}
+  .qds .c-6,.qds .c-4,.qds .c-8{grid-column:span 12}
+  .persona{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:720px){
+  .brand small{display:none}
+  .tabs .l{display:none}.tabs .s{display:inline}
+  .tabs{margin-left:auto}
+  .tabs button{padding:0 12px}
+  .topbar-in{gap:12px}
+  .h-sec{font-size:24px}
+  .jr{grid-template-columns:minmax(0,1fr)}
+  .qds{padding:16px}
+  .ab-scale{--ab:.78}
+}
+@media (max-width:480px){.brand b{display:none}.sec{padding-block:24px 48px}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.q *{animation-duration:.01ms!important;transition-duration:.01ms!important}.q .spin{animation:rot 2s linear infinite!important}}
+</style>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="11" fill="#fff"/><circle cx="17" cy="17" r="8" fill="none" stroke="#142D4E" stroke-width="3.2"/><path d="m22.5 22.5 5 5" stroke="#16A085" stroke-width="3.6" stroke-linecap="round"/></svg>
+      <div><b>QueueLess</b><small>Smart campus queue management</small></div>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Project sections">
+      <button role="tab" id="tab-prototype" aria-controls="sec-prototype" aria-selected="true" data-sec="prototype"><span class="l">Interactive Prototype</span><span class="s">Prototype</span></button>
+      <button role="tab" id="tab-artboards" aria-controls="sec-artboards" aria-selected="false" data-sec="artboards"><span class="l">Screen Artboards</span><span class="s">Artboards</span></button>
+      <button role="tab" id="tab-case-study" aria-controls="sec-case-study" aria-selected="false" data-sec="case-study"><span class="l">UX Case Study</span><span class="s">Case study</span></button>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- ================= 1. PROTOTYPE ================= -->
+<section class="sec" id="sec-prototype" role="tabpanel" aria-labelledby="tab-prototype">
+  <div class="proto">
+    <aside class="guide" aria-label="Prototype guide">
+      <div>
+        <div class="eyebrow">Interactive prototype</div>
+        <h2>Book a slot, get a token, watch the line move.</h2>
+      </div>
+      <p class="lead" style="font-size:14px">The phone is the working app. Follow the suggested journey; each step ticks off as you complete it.</p>
+      <ol class="steps" id="steps" aria-label="Suggested journey"></ol>
+      <button class="btn-reset" id="reset" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg>Reset prototype</button>
+      <div class="note"><b>Front-end simulation.</b> Nothing here is connected to a real college database or live queue system. While Live Queue is open, one person is served every 3.5 seconds so you can see the full journey.</div>
+    </aside>
+    <div class="stage" id="stage">
+      <div class="phone-box" id="phoneBox"><div class="phone q" id="app"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 2. ARTBOARDS ================= -->
+<section class="sec ab-scale" id="sec-artboards" role="tabpanel" aria-labelledby="tab-artboards" hidden>
+  <div class="eyebrow">Screen artboards</div>
+  <h2 class="h-sec" style="margin-top:8px">Seven screens, one design system</h2>
+  <p class="lead" style="margin-top:8px">Static frames for design review at 393 × 852 px, shown at 80%. They use the same components and styles as the prototype. Interaction lives in the Interactive Prototype tab.</p>
+
+  <div class="qds q" aria-label="Design system">
+    <div class="c-col"><h3>Colour palette</h3>
+      <div class="sw-grid">
+        <div class="swatch"><i style="background:#142D4E"></i><div><b>Navy Blue</b><code>#142D4E</code><span>Primary, headings, buttons</span></div></div>
+        <div class="swatch"><i style="background:#16A085"></i><div><b>Teal Accent</b><code>#16A085</code><span>Progress, success, icons</span></div></div>
+        <div class="swatch"><i style="background:#F7F9FC"></i><div><b>Light Background</b><code>#F7F9FC</code><span>Screen background</span></div></div>
+        <div class="swatch"><i style="background:#FFFFFF"></i><div><b>White</b><code>#FFFFFF</code><span>Cards, inputs</span></div></div>
+        <div class="swatch"><i style="background:#1E293B"></i><div><b>Primary Text</b><code>#1E293B</code><span>14.6:1 on white</span></div></div>
+        <div class="swatch"><i style="background:#64748B"></i><div><b>Secondary Text</b><code>#64748B</code><span>4.8:1 on white</span></div></div>
+        <div class="swatch"><i style="background:#DC5252"></i><div><b>Error</b><code>#DC5252</code><span>Fills, borders, icons</span></div></div>
+        <div class="swatch"><i style="background:#0B7A66"></i><div><b>Teal Deep (derived)</b><code>#0B7A66</code><span>Teal text, 5.3:1 on white</span></div></div>
+        <div class="swatch"><i style="background:#B03A3A"></i><div><b>Error Deep (derived)</b><code>#B03A3A</code><span>Error text, 6.0:1 on white</span></div></div>
+      </div>
+      <p class="cap-s">#16A085 and #DC5252 reach 3.3:1 and 3.9:1 on white, so they are used for fills, borders and icons. Text in those hues uses the derived deep variants.</p>
+    </div>
+    <div class="c-6"><h3>Typography · Inter</h3>
+      <table class="type-t">
+        <tr><td style="font-size:32px;font-weight:800;letter-spacing:-.8px;line-height:1.2">Your time matters.</td><td>Display 32 / 800</td></tr>
+        <tr><td style="font-size:24px;font-weight:800;letter-spacing:-.5px">Booking confirmed</td><td>Title 24 / 800</td></tr>
+        <tr><td style="font-size:18px;font-weight:700">Campus services</td><td>Heading 18 / 700</td></tr>
+        <tr><td style="font-size:16px;font-weight:600">Continue to booking</td><td>Button 16 / 600</td></tr>
+        <tr><td style="font-size:15px;font-weight:400">Pay tuition and hostel fees at the counter.</td><td>Body 15 / 400</td></tr>
+        <tr><td style="font-size:13px;font-weight:500;color:#64748B">Accounts Office · Ground floor</td><td>Caption 13 / 500</td></tr>
+        <tr><td style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#64748B">QUEUE POSITION</td><td>Label 12 / 700</td></tr>
+        <tr><td style="font-size:56px;font-weight:800;letter-spacing:-2px;line-height:1.1;color:#142D4E">FP-024</td><td>Token 56–64 / 800</td></tr>
+      </table>
+    </div>
+    <div class="c-6"><h3>Spacing · 8px base</h3>
+      <div class="sp">
+        <div><b>4</b><i style="width:4px"></i>micro gaps</div>
+        <div><b>8</b><i style="width:8px"></i>icon to text, grid gaps</div>
+        <div><b>16</b><i style="width:16px"></i>card padding</div>
+        <div><b>24</b><i style="width:24px"></i>screen gutters</div>
+        <div><b>32</b><i style="width:32px"></i>section spacing</div>
+        <div><b>48</b><i style="width:48px"></i>touch targets</div>
+        <div><b>56</b><i style="width:56px"></i>primary buttons</div>
+      </div>
+      <p class="cap-s">Radii: 12 pills · 14–16 buttons and slots · 20 cards · 28 ticket · 32 sheets.</p>
+    </div>
+    <div class="c-6"><h3>Buttons</h3>
+      <div class="spec-row">
+        <span class="btn">Primary</span><span class="btn sm">Primary 48</span><span class="btn bsec">Secondary</span>
+        <span class="btn dng">Destructive</span><span class="btn dngf">Confirm cancel</span><span class="btn dis">Disabled</span>
+      </div>
+      <div class="spec-row" style="margin-top:16px">
+        <span class="pill p-navy">Confirmed</span><span class="pill p-teal">In queue</span><span class="pill p-grey">Completed</span><span class="pill p-err">Cancelled</span>
+      </div>
+    </div>
+    <div class="c-6"><h3>Cards and slots</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="card" style="padding:16px;font-size:14px;font-weight:600">Standard card<div style="font-weight:400;color:#64748B;font-size:13px;margin-top:4px">20px radius, 2-layer soft shadow</div></div>
+        <div class="slots" style="grid-template-columns:1fr 1fr;align-content:start">
+          <span class="sl">10:00 AM</span><span class="sl" aria-pressed="true">10:30 AM</span>
+          <span class="sl full"><span class="tm">09:30 AM</span><small>Full</small></span><span class="sl" style="border-color:#C9D3E1">11:00 AM</span>
+        </div>
+      </div>
+      <p class="cap-s">Slots: available (outlined), selected (navy fill), unavailable (hatched, dashed, struck through, labelled “Full”).</p>
+    </div>
+    <div class="c-col"><h3>Icon style</h3>
+      <div class="icons" id="iconSpec"></div>
+      <p class="cap-s">24px grid, 1.75px rounded stroke, no fills. Colour follows context: navy by default, deep teal for positive states.</p>
+    </div>
+  </div>
+
+  <div class="block-h"><div class="eyebrow">Screens</div><h2>Seven mobile screens</h2></div>
+  <div class="abgrid" id="abScreens"></div>
+
+  <div class="block-h"><div class="eyebrow">States</div><h2>Additional UI states</h2><p class="lead">Loading, error, empty and notification states that sit outside the main path.</p></div>
+  <div class="abgrid" id="abStates"></div>
+</section>
+
+<!-- ================= 3. CASE STUDY ================= -->
+<section class="sec" id="sec-case-study" role="tabpanel" aria-labelledby="tab-case-study" hidden>
+  <div style="margin-bottom:48px;max-width:760px">
+    <div class="eyebrow">UX case study</div>
+    <h2 class="h-sec" style="margin-top:8px;font-size:36px">Designing a line you don’t have to stand in</h2>
+    <p class="lead" style="margin-top:12px">How QueueLess was framed, designed and prepared for testing. This is design documentation, separate from the app. No research has been run yet, so personas and pain points are labelled as assumptions and no findings are reported.</p>
+  </div>
+  <div class="cs">
+    <nav class="toc" aria-label="Case study contents">
+      <a href="#cs1"><span>1</span>Project overview</a><a href="#cs2"><span>2</span>Problem statement</a><a href="#cs3"><span>3</span>Project goals</a><a href="#cs4"><span>4</span>Target audience</a><a href="#cs5"><span>5</span>User persona</a><a href="#cs6"><span>6</span>User pain points</a><a href="#cs7"><span>7</span>User journey</a><a href="#cs8"><span>8</span>User flow</a><a href="#cs9"><span>9</span>Information architecture</a><a href="#cs10"><span>10</span>Design decisions</a><a href="#cs11"><span>11</span>Accessibility</a><a href="#cs12"><span>12</span>Challenges and solutions</a><a href="#cs13"><span>13</span>Usability testing plan</a><a href="#cs14"><span>14</span>Future improvements</a>
+    </nav>
+    <div class="cs-body">
+
+      <section id="cs1"><h2><span class="n">01</span>Project overview</h2>
+        <p>QueueLess is a mobile app concept that lets college students book a time slot at a campus service counter, receive a digital token and follow their place in line from anywhere. It replaces standing in a physical queue with a short, predictable visit.</p>
+        <div class="facts">
+          <div class="fact"><small>Role</small><b>UI/UX design and front-end prototyping</b></div>
+          <div class="fact"><small>Platform</small><b>Mobile, 393 × 852 px frame</b></div>
+          <div class="fact"><small>Scope</small><b>7 screens, 4 campus services</b></div>
+          <div class="fact"><small>Status</small><b>Concept with working prototype</b></div>
+        </div>
+        <p class="muted">The prototype is a front-end simulation. It is not connected to a college database or a live queue system.</p>
+      </section>
+
+      <section id="cs2"><h2><span class="n">02</span>Problem statement</h2>
+        <p>At many colleges, services such as fee payment, certificates and administration run on walk-in queues. Students do not know how long they will wait, whether they carry the right documents, or whether leaving the line costs them their place. A short errand can take a large part of a break between lectures.</p>
+        <div class="panel hl"><h3>How might we…</h3><p>…tell students exactly when to arrive and what to bring, so a counter visit fits between classes and does not depend on standing in line?</p></div>
+        <p class="muted">This framing is based on common experience of campus queues, not on collected data.</p>
+      </section>
+
+      <section id="cs3"><h2><span class="n">03</span>Project goals</h2>
+        <div class="cols2">
+          <div class="panel"><h3>Student goals</h3><ul class="bul"><li>Book a service slot in under a minute.</li><li>Know the wait before leaving the classroom.</li><li>Arrive with the right documents.</li><li>See and cancel bookings without help.</li></ul></div>
+          <div class="panel"><h3>Design goals</h3><ul class="bul"><li>One clear action per screen.</li><li>A token that is readable at a glance.</li><li>Errors that explain how to recover.</li><li>Consistent data across every screen.</li></ul></div>
+        </div>
+        <p class="muted">Targets such as “under a minute” are design aims to check in testing, not measured results.</p>
+      </section>
+
+      <section id="cs4"><h2><span class="n">04</span>Target audience</h2>
+        <p><b>Primary:</b> college students aged 18–25, mostly undergraduates, who move between lectures with limited free time and use their phone for most tasks.</p>
+        <p><b>Not in scope for this concept:</b> counter staff and administrators. A staff-side tool would be a separate design effort.</p>
+      </section>
+
+      <section id="cs5"><h2><span class="n">05</span>User persona</h2>
+        <span class="badge">Initial assumption · not based on research</span>
+        <div class="persona">
+          <div class="pf"><div class="pav" aria-hidden="true">AS</div><b style="font-size:18px">Ananya Sen</b><span class="muted">20 · 3rd-year B.Tech, Computer Science · Hostel resident</span></div>
+          <div class="cols2">
+            <div><h3>Context</h3><ul class="bul"><li>Lectures run 9 AM to 4 PM with 30–60 minute gaps.</li><li>Uses an Android phone one-handed, often while walking.</li><li>Needs a fee receipt for a scholarship form.</li></ul></div>
+            <div><h3>Needs</h3><ul class="bul"><li>A time she can plan around.</li><li>A checklist of what to carry.</li><li>Proof that the booking exists.</li></ul></div>
+            <div><h3>Frustrations (assumed)</h3><ul class="bul"><li>Arriving to find a long line.</li><li>Missing a document and returning later.</li></ul></div>
+            <div><h3>Behaviours (assumed)</h3><ul class="bul"><li>Checks the phone between classes.</li><li>Prefers quick actions over long forms.</li></ul></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="cs6"><h2><span class="n">06</span>User pain points</h2>
+        <span class="badge">Initial assumptions · to be validated</span>
+        <div class="scroll-x"><table class="tbl"><thead><tr><th>Pain point</th><th>Why it matters</th><th>Design response</th></tr></thead><tbody>
+          <tr><td>Unknown wait time</td><td>Students cannot judge if a visit fits in a break.</td><td>Estimated wait on service cards, details, token and live queue.</td></tr>
+          <tr><td>Missing documents</td><td>A wasted trip costs the whole wait again.</td><td>Required documents listed before booking.</td></tr>
+          <tr><td>Losing a place in line</td><td>Leaving for a call or lecture means starting over.</td><td>Digital token and live position.</td></tr>
+          <tr><td>Clashing with timetable</td><td>Walk-in hours overlap with lectures.</td><td>Date and time slot selection.</td></tr>
+          <tr><td>Unsure a booking worked</td><td>No proof leads to double booking or anxiety.</td><td>Success screen with token; My Bookings with status.</td></tr>
+          <tr><td>Plans change</td><td>Students avoid booking if cancelling is hard.</td><td>Cancel or leave in two taps, with plain confirmation.</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section id="cs7"><h2><span class="n">07</span>User journey</h2>
+        <p class="muted">Emotions are assumed for the persona and need validating with real students.</p>
+        <div class="jr">
+          <div><h4>Plan</h4><div><small>Student does</small>Realises a receipt is needed; opens the app.</div><div><small>Likely feels (assumed)</small>Rushed, unsure of the wait.</div><div><small>QueueLess</small>Service cards with wait estimates.</div><span class="scr">Home · Service details</span></div>
+          <div><h4>Prepare</h4><div><small>Student does</small>Checks what to carry.</div><div><small>Likely feels (assumed)</small>Wants to get it right first time.</div><div><small>QueueLess</small>Document checklist and counter hours.</div><span class="scr">Service details</span></div>
+          <div><h4>Book</h4><div><small>Student does</small>Picks a date and time.</div><div><small>Likely feels (assumed)</small>Careful about lecture clashes.</div><div><small>QueueLess</small>Clear slot states; error if a slot is full.</div><span class="scr">Slot booking</span></div>
+          <div><h4>Wait</h4><div><small>Student does</small>Goes to class, checks position.</div><div><small>Likely feels (assumed)</small>Wants reassurance, not constant checking.</div><div><small>QueueLess</small>Token, people ahead, progress, leave option.</div><span class="scr">Token · Live queue</span></div>
+          <div><h4>Done</h4><div><small>Student does</small>Visits the counter; reviews history.</div><div><small>Likely feels (assumed)</small>Relieved; wants a record.</div><div><small>QueueLess</small>Status and history in one list.</div><span class="scr">My Bookings</span></div>
+        </div>
+      </section>
+
+      <section id="cs8"><h2><span class="n">08</span>User flow</h2>
+        <p>The main path is linear so a student can finish it one-handed. Two branches handle the common problems: a full slot and the end of the wait.</p>
+        <div class="flow-wrap">
+        <svg class="flow" viewBox="0 0 900 260" role="img" aria-label="User flow from Home to Service details, Slot booking, Digital token, Live queue and My Bookings. Slot booking can show a full-slot error and return to slot choice. Live queue ends either in Your turn or Leave queue, both recorded in My Bookings.">
+          <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" class="fl-ar"/></marker></defs>
+          <g>
+            <rect class="fl-n a" x="20" y="40" width="120" height="52" rx="14"/><text class="fl-t" x="80" y="63" text-anchor="middle">Home</text><text class="fl-s" x="80" y="80" text-anchor="middle" style="fill:#B9C8DC">Pick a service</text>
+            <rect class="fl-n" x="168" y="40" width="120" height="52" rx="14"/><text class="fl-t" x="228" y="63" text-anchor="middle">Service details</text><text class="fl-s" x="228" y="80" text-anchor="middle">Wait, documents</text>
+            <rect class="fl-n" x="316" y="40" width="120" height="52" rx="14"/><text class="fl-t" x="376" y="63" text-anchor="middle">Slot booking</text><text class="fl-s" x="376" y="80" text-anchor="middle">Date and time</text>
+            <rect class="fl-n" x="464" y="40" width="120" height="52" rx="14"/><text class="fl-t" x="524" y="63" text-anchor="middle">Digital token</text><text class="fl-s" x="524" y="80" text-anchor="middle">Confirmation</text>
+            <rect class="fl-n" x="612" y="40" width="120" height="52" rx="14"/><text class="fl-t" x="672" y="63" text-anchor="middle">Live queue</text><text class="fl-s" x="672" y="80" text-anchor="middle">Position, progress</text>
+            <rect class="fl-n a" x="760" y="40" width="120" height="52" rx="14"/><text class="fl-t" x="820" y="63" text-anchor="middle">My Bookings</text><text class="fl-s" x="820" y="80" text-anchor="middle" style="fill:#B9C8DC">Status, history</text>
+          </g>
+          <g class="fl-l"><path d="M140 66h26" marker-end="url(#arr)"/><path d="M288 66h26" marker-end="url(#arr)"/><path d="M436 66h26" marker-end="url(#arr)"/><path d="M584 66h26" marker-end="url(#arr)"/><path d="M732 66h26" marker-end="url(#arr)"/></g>
+          <text class="fl-s" x="446" y="58" text-anchor="middle" style="font-size:10px">confirm</text>
+          <g>
+            <rect class="fl-e" x="316" y="160" width="120" height="52" rx="14"/><text class="fl-t" x="376" y="183" text-anchor="middle" style="font-size:12px">Slot is full</text><text class="fl-s" x="376" y="199" text-anchor="middle">Error and suggestions</text>
+            <rect class="fl-e" x="560" y="160" width="112" height="52" rx="14"/><text class="fl-t" x="616" y="183" text-anchor="middle" style="font-size:12px">Your turn</text><text class="fl-s" x="616" y="199" text-anchor="middle">Completed</text>
+            <rect class="fl-e" x="688" y="160" width="112" height="52" rx="14"/><text class="fl-t" x="744" y="183" text-anchor="middle" style="font-size:12px">Leave queue</text><text class="fl-s" x="744" y="199" text-anchor="middle">Confirm, cancelled</text>
+          </g>
+          <g class="fl-l"><path d="M360 92v66" marker-end="url(#arr)"/><path d="M392 160V94" stroke-dasharray="4 3" marker-end="url(#arr)"/><path d="M660 92v28H616v38" marker-end="url(#arr)"/><path d="M684 92v28h60v38" marker-end="url(#arr)"/><path d="M616 212v22h204V94" stroke-dasharray="4 3"/><path d="M744 212v22" /></g>
+          <text class="fl-s" x="380" y="130" style="font-size:10px">tap a full slot</text>
+          <text class="fl-s" x="500" y="252" style="font-size:10px">both outcomes appear in My Bookings</text>
+        </svg></div>
+      </section>
+
+      <section id="cs9"><h2><span class="n">09</span>Information architecture</h2>
+        <p>The app has three top-level destinations. The booking flow is a task path reached from Home, so it uses back buttons instead of extra tabs.</p>
+        <div><div class="ia-root">QueueLess app</div>
+        <div class="ia">
+          <div><h4>Home</h4><ul><li>Welcome and short description</li><li>Service categories<ul><li>Fee Payment</li><li>Certificates</li><li>Administration</li><li>Canteen</li></ul></li><li>Upcoming booking card</li><li>Booking flow<ul><li>Service details</li><li>Slot booking</li><li>Token confirmation</li><li>Live queue tracking</li></ul></li></ul></div>
+          <div><h4>My Bookings</h4><ul><li>Upcoming<ul><li>Booking status</li><li>View token or track queue</li><li>Cancel (with confirmation)</li></ul></li><li>History<ul><li>Completed</li><li>Cancelled or left queue</li><li>Book again</li></ul></li><li>Empty states</li></ul></div>
+          <div><h4>Profile</h4><ul><li>Student information<ul><li>Name, course, student ID</li></ul></li><li>Contact details</li><li>Notification preferences</li><li>Settings<ul><li>Larger text</li><li>Reduce motion</li></ul></li><li>Log out</li></ul></div>
+        </div></div>
+      </section>
+
+      <section id="cs10"><h2><span class="n">10</span>Design decisions and reasoning</h2>
+        <div class="dec">
+          <div><h3>Navy with a single teal accent</h3><p>Navy reads as institutional and trustworthy. Teal is reserved for progress and success, so it keeps its meaning. Teal text uses a deeper variant to pass contrast.</p></div>
+          <div><h3>The token is the hero</h3><p>At 56–64px and high contrast, the token can be read from arm’s length at a counter, and it is the one thing a student must remember.</p></div>
+          <div><h3>Full slots explain themselves</h3><p>Unavailable times use a hatch, a dashed border, strike-through and a “Full” label. Tapping one gives a reason and two open alternatives instead of failing silently.</p></div>
+          <div><h3>Documents before booking</h3><p>The checklist sits on the details screen, before commitment, so students can decide whether they are ready.</p></div>
+          <div><h3>Wait time everywhere</h3><p>Estimated wait appears on cards, details, token and queue. It is the number students ask first.</p></div>
+          <div><h3>Plain destructive confirmations</h3><p>Leaving a queue or cancelling opens a sheet that states the consequence, with the safe option first.</p></div>
+          <div><h3>Three tabs only</h3><p>Home, My Bookings and Profile cover everything. The booking flow hides the tab bar to keep attention on one task.</p></div>
+          <div><h3>One booking record</h3><p>Home, token, queue and My Bookings all read the same booking, so token number, time and status never disagree.</p></div>
+        </div>
+      </section>
+
+      <section id="cs11"><h2><span class="n">11</span>Accessibility considerations</h2>
+        <p>Contrast ratios below are calculated from the palette. Pairs under 4.5:1 are used only for fills, borders and icons.</p>
+        <div class="ct">
+          <div style="background:#142D4E;color:#fff"><b>Navy on white</b><span>13.9:1 · AAA</span></div>
+          <div style="background:#fff;color:#1E293B;border:1px solid var(--line)"><b>Primary text</b><span>14.6:1 · AAA</span></div>
+          <div style="background:#fff;color:#64748B;border:1px solid var(--line)"><b>Secondary text</b><span>4.8:1 · AA</span></div>
+          <div style="background:#E4F5F1;color:#0B7A66"><b>Teal Deep on tint</b><span>4.7:1 · AA</span></div>
+          <div style="background:#FCEBEB;color:#B03A3A"><b>Error Deep on tint</b><span>5.2:1 · AA</span></div>
+          <div style="background:#fff;color:#16A085;border:1px solid var(--line)"><b>Teal on white</b><span>3.3:1 · graphics only</span></div>
+        </div>
+        <ul class="bul">
+          <li><b>Not colour alone:</b> slot state, status pills and errors combine colour with text, pattern or icons.</li>
+          <li><b>Touch targets:</b> buttons, slots and tabs are 48px or larger; primary actions are 56px.</li>
+          <li><b>Text size:</b> body 15px, captions 12px minimum. A Larger text setting scales the app text by 14%.</li>
+          <li><b>Reduce motion:</b> a setting switches off animation and respects the system preference on this page.</li>
+          <li><b>Semantics:</b> real buttons, switches with state, a progress bar with values, alerts for errors, labelled dialogs and Escape to close sheets.</li>
+          <li><b>Not yet done:</b> screen-reader testing, keyboard-only walkthrough with real users and a full WCAG audit.</li>
+        </ul>
+      </section>
+
+      <section id="cs12"><h2><span class="n">12</span>Challenges and design solutions</h2>
+        <div class="scroll-x"><table class="tbl"><thead><tr><th>Challenge</th><th>Solution</th></tr></thead><tbody>
+          <tr><td>Showing a full slot without a dead end</td><td>Visible “Full” treatment, tap feedback with shake, a message naming the slot and the next open times.</td></tr>
+          <tr><td>Making a queue feel live without a backend</td><td>Scripted ticks every 3.5 seconds while the screen is open, labelled as a simulation in the prototype notes and in the app.</td></tr>
+          <tr><td>Keeping data consistent across screens</td><td>A single booking object drives Home, Token, Live Queue and My Bookings.</td></tr>
+          <tr><td>Avoiding double booking</td><td>A second booking for today is blocked while a token is active, with a message explaining how to proceed.</td></tr>
+          <tr><td>Fitting dense content into 393px</td><td>Segmented Upcoming/History, two-column service grid, summary footer in the slot step.</td></tr>
+          <tr><td>Teal accent failing text contrast</td><td>Teal limited to graphics. A derived deep teal carries small text.</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section id="cs13"><h2><span class="n">13</span>Usability testing plan</h2>
+        <span class="badge">Proposed plan · no sessions have been run</span>
+        <div class="cols2">
+          <div class="panel"><h3>Method</h3><p style="font-size:14px">Moderated, think-aloud sessions of 20–25 minutes on the clickable prototype, run on a phone where possible.</p></div>
+          <div class="panel"><h3>Participants</h3><p style="font-size:14px">5–8 undergraduates from different years and courses, including at least one who uses larger system text.</p></div>
+        </div>
+        <h3 style="margin-top:24px">Tasks</h3>
+        <ol class="bul"><li>Find out how long the Fee Payment wait is and what to bring.</li><li>Book the 09:30 AM slot (expected to be full) and recover.</li><li>Confirm a booking for 10:30 AM and tell the moderator what your token is.</li><li>Check how many people are ahead of you.</li><li>Leave the queue, then find the booking afterwards.</li></ol>
+        <h3 style="margin-top:24px">Measures and proposed success criteria</h3>
+        <div class="scroll-x"><table class="tbl"><thead><tr><th>Measure</th><th>How</th><th>Proposed target</th></tr></thead><tbody>
+          <tr><td>Task completion</td><td>Observed, unaided</td><td>At least 80% on tasks 1–3</td></tr>
+          <tr><td>Time to book</td><td>Stopwatch, tasks 2–3</td><td>Under 60 seconds after the error</td></tr>
+          <tr><td>Errors and hesitations</td><td>Moderator notes</td><td>Recovery from full slot without help</td></tr>
+          <tr><td>Perceived ease</td><td>Single Ease Question per task, SUS at end</td><td>Baseline to be set after round one</td></tr>
+          <tr><td>Comprehension</td><td>Ask participants to explain token and position</td><td>Token and position explained correctly</td></tr>
+        </tbody></table></div>
+        <h3 style="margin-top:24px">Next steps</h3>
+        <ol class="bul"><li>Write a short screener and consent note, then recruit participants.</li><li>Pilot the script with one person and fix prototype blockers.</li><li>Run sessions and record issues by severity.</li><li>Replace the persona and pain-point assumptions with what the sessions show.</li><li>Prioritise fixes, update the prototype and run a second round.</li></ol>
+      </section>
+
+      <section id="cs14"><h2><span class="n">14</span>Future improvements</h2>
+        <div class="road">
+          <div><h3>Next <span>Validate</span></h3><ul class="bul"><li>Run the usability tests and revise.</li><li>Screen-reader and keyboard audit.</li><li>Reschedule a booking in one flow.</li><li>Waitlist for full slots.</li></ul></div>
+          <div><h3>Then <span>Connect</span></h3><ul class="bul"><li>Campus single sign-on and student records.</li><li>Real queue data and push notifications.</li><li>QR check-in at the counter.</li><li>Fee receipt and certificate status inside the app.</li></ul></div>
+          <div><h3>Later <span>Expand</span></h3><ul class="bul"><li>Staff dashboard for counter management.</li><li>Crowd forecasts for quieter times.</li><li>Multiple languages.</li><li>Dark theme for the app.</li></ul></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+(function(){
+"use strict";
+/* ---------- icons ---------- */
+var ICONS={
+ home:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+ cal:'<rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M8 2.5v4M16 2.5v4M3 10h18"/>',
+ user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/>',
+ card:'<rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/>',
+ file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+ gov:'<path d="M3 10 12 4l9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18"/>',
+ food:'<path d="M6 3v7a2 2 0 0 0 2 2v9M10 3v7a2 2 0 0 1-2 2M17 21V3c-2.5 1.5-3.5 4.5-3.5 8H17"/>',
+ clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+ chevL:'<path d="m15 5-7 7 7 7"/>',chevR:'<path d="m9 5 7 7-7 7"/>',
+ check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+ alert:'<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5h.01"/>',
+ x:'<path d="m6 6 12 12M18 6 6 18"/>',
+ bell:'<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15zM10 21h4"/>',
+ sliders:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
+ out:'<path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M16 8l4 4-4 4M20 12H9"/>',
+ mail:'<rect x="3" y="5" width="18" height="14" rx="3"/><path d="m3.5 7.5 8.5 6 8.5-6"/>',
+ phone:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A15 15 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+ id:'<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.6-1.5 1.7-2 3-2s2.4.5 3 2M14.5 10H18M14.5 13.5H18"/>',
+ ticket:'<path d="M3 9a2 2 0 0 0 0 6v3a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a2 2 0 0 1 0-6V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1z"/><path d="M14 5v14" stroke-dasharray="2 3"/>',
+ users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 2.9-5.5 6.5-5.5s6.5 2 6.5 5.5M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c2 .7 3.5 2.2 3.5 5.2"/>',
+ pin:'<path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+ info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.5h.01"/>',
+ type:'<path d="M4 7V5h16v2M12 5v14M9 19h6"/>',
+ motion:'<path d="M4 12h4l3-7 3 14 3-7h3"/>',
+ inbox:'<path d="M3 13h5l1.5 3h5L16 13h5M5 5h14l2 8v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6z"/>',
+ spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/>',
+ scan:'<path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M8 12h8"/>'
+};
+function I(n,s,c){s=s||24;return '<svg class="ic'+(c?' '+c:'')+'" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICONS[n]+'</svg>';}
+function logo(s){return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="11" fill="#fff"/><circle cx="17" cy="17" r="8" fill="none" stroke="#142D4E" stroke-width="3.2"/><path d="m22.5 22.5 5 5" stroke="#16A085" stroke-width="3.6" stroke-linecap="round"/></svg>';}
+function logoD(s){return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="11" fill="#142D4E"/><circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="3.2"/><path d="m22.5 22.5 5 5" stroke="#16A085" stroke-width="3.6" stroke-linecap="round"/></svg>';}
+
+/* ---------- data ---------- */
+var SV={
+ fee:{name:'Fee Payment',office:'Accounts Office',loc:'Admin Block · Ground floor',icon:'card',pre:'FP',base:24,avg:3,hours:'9–4',counter:'Counter 3',
+  desc:'Pay tuition, hostel and exam fees at the accounts counter, or collect a receipt for a payment made online. Cash is not accepted. Use UPI or card.',
+  docs:[['Student ID card','Original, with a clear photo'],['Fee challan or payment reference','Printed or on your phone'],['Previous receipt','Only needed for a part payment']]},
+ cert:{name:'Certificates',office:'Registrar’s Office',loc:'Academic Block · Room 104',icon:'file',pre:'CT',base:42,avg:5,hours:'9–4',counter:'Counter 1',
+  desc:'Apply for or collect bonafide, transcript and character certificates. Most requests are ready within two working days.',
+  docs:[['Student ID card','Original, with a clear photo'],['Signed request form','Available at the counter'],['Fee receipt','₹50 for each certificate copy']]},
+ admin:{name:'Administration',office:'Student Affairs Office',loc:'Admin Block · First floor',icon:'gov',pre:'AD',base:19,avg:6,hours:'9–4',counter:'Desk 2',
+  desc:'Get help with ID card reissue, course registration changes, no-dues forms and hostel letters.',
+  docs:[['Student ID card','Or a copy of the lost-card report'],['Supporting form or letter','Signed by your department'],['Passport-size photo','Only for an ID card reissue']]},
+ canteen:{name:'Canteen',office:'Central Canteen',loc:'Student Centre · Ground floor',icon:'food',pre:'CN',base:113,avg:2,hours:'9–4',counter:'Pickup 1',
+  desc:'Reserve a pickup slot for pre-ordered meals and skip the lunch-hour line. Meals are held for 10 minutes after your slot.',
+  docs:[['Student ID card','Or the app on your phone'],['Pre-order number','Shown in your order confirmation'],['UPI payment','Pay before you arrive']]}
+};
+var ORDER=['fee','cert','admin','canteen'];
+var DATES=[{dow:'Wed',d:18,l:'Today, 18 Nov'},{dow:'Thu',d:19,l:'Thu, 19 Nov'},{dow:'Fri',d:20,l:'Fri, 20 Nov'},{dow:'Mon',d:23,l:'Mon, 23 Nov'},{dow:'Tue',d:24,l:'Tue, 24 Nov'}];
+var AM=['09:00 AM','09:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM'];
+var PM=['12:00 PM','12:30 PM','02:00 PM','02:30 PM','03:00 PM','03:30 PM'];
+var FULL=[['09:30 AM','11:00 AM','12:30 PM','03:00 PM'],['09:30 AM','10:00 AM','02:30 PM'],['09:30 AM','11:30 AM'],['09:00 AM','09:30 AM','03:30 PM'],['09:30 AM','12:00 PM']];
+var CTRSTART={fee:23,cert:42,admin:19,canteen:113};
+function pad(n){return String(n).padStart(3,'0');}
+function openSlots(di){return AM.concat(PM).filter(function(s){return FULL[di].indexOf(s)<0;});}
+
+function seed(){return{
+ screen:'home',stack:[],service:'fee',dateIdx:0,slot:null,err:null,focus:null,bookTab:'upcoming',sheet:null,loading:null,toast:null,push:null,skel:false,hl:null,
+ prefs:{queue:true,turn:true,remind:false},lg:false,rm:false,out:false,fx:{},ctr:JSON.parse(JSON.stringify(CTRSTART)),
+ bookings:[
+  {id:'b1',svc:'cert',dl:'Thu, 19 Nov',slot:'11:30 AM',token:'CT-041',n:41,status:'confirmed',today:false,ahead:4,start:4},
+  {id:'h1',svc:'cert',dl:'Tue, 10 Nov',slot:'10:00 AM',token:'CT-036',n:36,status:'completed'},
+  {id:'h2',svc:'canteen',dl:'Mon, 2 Nov',slot:'01:00 PM',token:'CN-112',n:112,status:'completed'},
+  {id:'h3',svc:'admin',dl:'Fri, 23 Oct',slot:'02:30 PM',token:'AD-018',n:18,status:'cancelled'}
+ ]};}
+var S=seed();
+var F={};
+var T={};
+
+/* ---------- selectors ---------- */
+function bk(S,id){return S.bookings.filter(function(b){return b.id===id;})[0];}
+function upcoming(S){var u=S.bookings.filter(function(b){return b.status==='active'||b.status==='confirmed';});u.sort(function(a,b){return (b.status==='active')-(a.status==='active');});return u;}
+function history(S){return S.bookings.filter(function(b){return b.status!=='active'&&b.status!=='confirmed';});}
+function activeB(S){return S.bookings.filter(function(b){return b.status==='active';})[0];}
+function phase(b){return b.ahead<=0?'turn':(b.ahead===1?'next':'wait');}
+function waitMin(b){return b.ahead*SV[b.svc].avg;}
+function tokHTML(t){var p=t.split('-');return '<em>'+p[0]+'</em>-'+p[1];}
+var PILL={confirmed:['p-navy','Confirmed'],active:['p-teal','In queue'],completed:['p-grey','Completed'],cancelled:['p-err','Cancelled'],left:['p-grey','Left queue']};
+function pill(st){var p=PILL[st];return '<span class="pill '+p[0]+'">'+p[1]+'</span>';}
+
+/* ---------- views ---------- */
+function statusBar(dark){
+ return '<div class="sb'+(dark?' dk':'')+'"><span>9:41</span><i>'
+ +'<svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" width="3" height="12" rx="1"/></svg>'
+ +'<svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><path d="M8.5 2.3c2.3 0 4.4.9 6 2.4l1-1.1A10.4 10.4 0 0 0 8.5.8 10.4 10.4 0 0 0 1.5 3.6l1 1.1a8.9 8.9 0 0 1 6-2.4z"/><path d="M8.5 5.8c1.4 0 2.6.5 3.6 1.4l1-1.1a7 7 0 0 0-9.2 0l1 1.1c1-.9 2.2-1.4 3.6-1.4z"/><circle cx="8.5" cy="10" r="1.6"/></svg>'
+ +'<svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x=".5" y=".5" width="22" height="12" rx="3.5" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="19" height="9" rx="2.2" fill="currentColor"/><path d="M24 4.5v4c.9-.3 1.5-1.2 1.5-2s-.6-1.7-1.5-2z" fill="currentColor" opacity=".5"/></svg>'
+ +'</i></div><div class="isl"></div>';
+}
+function hdr(title,back){
+ return '<header class="hd">'+(back?'<button class="ib" data-a="back" aria-label="Back">'+I('chevL',24)+'</button>':'')+'<h1>'+title+'</h1></header>';
+}
+function tabbar(cur){
+ function t(k,l,ic){return '<button class="tb" data-a="tab" data-v="'+k+'"'+(cur===k?' aria-current="page"':'')+'>'+I(ic,24)+l+'</button>';}
+ return '<nav class="tabbar" aria-label="Primary">'+t('home','Home','home')+t('bookings','My Bookings','ticket')+t('profile','Profile','user')+'</nav>';
+}
+function vHome(S){
+ var up=upcoming(S)[0],card;
+ if(up){var v=SV[up.svc],act=up.status==='active';
+  card='<section class="card up" aria-label="Upcoming booking"><div class="up-r"><span class="ico'+(act?' t':'')+'">'+I(v.icon,24)+'</span><div class="grow"><b>'+v.name+'</b><span class="sub">'+up.dl+' · '+up.slot+'</span></div>'+pill(up.status)+'</div>'
+  +'<div class="up-m"><span>'+I('ticket',16)+'Token&nbsp;<b>'+up.token+'</b></span><span>'+I('pin',16)+v.office+'</span></div>'
+  +'<button class="btn sm" data-a="'+(act?'open-queue':'open-token')+'" data-v="'+up.id+'">'+(act?'Track live queue':'View token')+I('chevR',20)+'</button></section>';
+ }else{
+  card='<section class="card up" aria-label="Upcoming booking"><div class="up-r"><span class="ico">'+I('cal',24)+'</span><div class="grow"><b>No upcoming bookings</b><span class="sub">Pick a service above to skip the line.</span></div></div></section>';
+ }
+ var cards=ORDER.map(function(k){var v=SV[k];return '<button class="svc" data-a="svc" data-v="'+k+'"><span class="ico'+(k==='fee'?' t':'')+'">'+I(v.icon,20)+'</span><span><b>'+v.name+'</b><span class="w">'+I('clock',14)+'≈ '+(4*v.avg)+' min wait</span></span></button>';}).join('');
+ return '<div class="view home'+(S.fx.enter?' enter':'')+'">'
+ +'<div class="hero"><div class="hero-top">'+logo(40)+'<div class="wmw"><span class="wm">QueueLess</span><small>Welcome back, Ananya</small></div><button class="av" data-a="tab" data-v="profile" aria-label="Open profile">AS</button></div>'
+ +'<h1>Your time matters.</h1><p>Book a slot at any campus counter, get a digital token and track your place in line from anywhere.</p></div>'
+ +'<div class="pad" style="padding-top:16px"><div class="sh"><h2>Campus services</h2></div><div class="grid2">'+cards+'</div></div>'
+ +'<div class="pad" style="padding-top:16px;padding-bottom:16px"><div class="sh"><h2>Upcoming booking</h2></div>'+card+'</div></div>'+tabbar('home');
+}
+function vDetails(S){
+ var v=SV[S.service];
+ var docs=v.docs.map(function(d){return '<div class="doc"><span class="ck">'+I('check',14)+'</span><div><b>'+d[0]+'</b><span>'+d[1]+'</span></div></div>';}).join('');
+ return '<div class="view'+(S.fx.enter?' enter':'')+'">'+hdr('Service details',true)
+ +'<div class="pad" style="display:flex;flex-direction:column;gap:16px;padding-bottom:16px">'
+ +'<section class="card dhero"><div style="display:flex;gap:16px;align-items:center"><span class="ico t" style="width:56px;height:56px;border-radius:18px">'+I(v.icon,28)+'</span><div><div class="lbl">Selected service</div><h2>'+v.name+'</h2></div></div>'
+ +'<p>'+v.desc+'</p>'
+ +'<div class="t-sub" style="display:flex;gap:8px;align-items:center">'+I('pin',16)+v.office+' · '+v.loc+'</div>'
+ +'<div class="stats"><div class="stat"><b>≈ '+(4*v.avg)+' min</b><span>Est. wait</span></div><div class="stat"><b>'+v.hours+'</b><span>Counter hours</span></div><div class="stat"><b>'+openSlots(0).length+'</b><span>Open slots today</span></div></div></section>'
+ +'<section><div class="sh"><h2>What to bring</h2></div><div class="card" style="padding:16px"><div class="docs">'+docs+'</div></div></section></div>'
+ +'</div><div class="ft"><button class="btn" data-a="to-slots">Continue to booking'+I('chevR',20)+'</button></div>';
+}
+function slotBtn(S,s){
+ var full=FULL[S.dateIdx].indexOf(s)>=0,sel=S.slot===s;
+ if(full)return '<button class="sl full" data-a="slot" data-v="'+s+'" aria-disabled="true" aria-label="'+s+', fully booked">'+s+'<small>Full</small></button>';
+ return '<button class="sl" data-a="slot" data-v="'+s+'" aria-pressed="'+(sel?'true':'false')+'">'+(sel?I('check',16)+' ':'')+s+'</button>';
+}
+function vSlots(S){
+ var v=SV[S.service];
+ var dates=DATES.map(function(d,i){return '<button class="dt" data-a="date" data-v="'+i+'" aria-pressed="'+(S.dateIdx===i)+'"><span>'+d.dow+'</span><b>'+d.d+'</b></button>';}).join('');
+ var err='';
+ if(S.err){
+  var all=AM.concat(PM),ix=all.indexOf(S.err.slot||''),op=openSlots(S.dateIdx).filter(function(x){return all.indexOf(x)>ix;}).slice(0,2);if(!op.length)op=openSlots(S.dateIdx).slice(0,2);
+  if(S.err.kind==='full'){
+   err='<div class="err in" role="alert">'+I('alert',24)+'<div><b>'+S.err.slot+' is fully booked</b><span class="m">Pick another time. '+op.join(' and ')+' '+(op.length>1?'are':'is')+' still open.</span></div></div>';
+  }else{
+   err='<div class="err in" role="alert">'+I('alert',24)+'<div><b>You already have an active token</b><span class="m">Token '+S.err.token+' is in the queue today. Leave that queue first, or choose another date.</span></div></div>';
+  }
+ }
+ var foot='<div class="ft">'+err+'<div class="sum">'+(S.slot?'<b>'+v.name+'</b> · '+DATES[S.dateIdx].l+' · <b>'+S.slot+'</b>':'Select an available time to continue')+'</div>'
+ +(S.slot?'<button class="btn" data-a="confirm">Confirm booking'+I('check',20)+'</button>':'<button class="btn dis" aria-disabled="true" data-a="noop">Confirm booking</button>')+'</div>';
+ return '<div class="view'+(S.fx.enter?' enter':'')+'">'+hdr('Book a slot',true)
+ +'<div class="pad" style="display:flex;flex-direction:column;gap:12px;padding-bottom:8px">'
+ +'<div class="chip-s"><span class="ico t" style="width:40px;height:40px;border-radius:12px">'+I(v.icon,20)+'</span><div><b>'+v.name+'</b><span class="s">'+v.office+' · ≈ '+(4*v.avg)+' min wait</span></div></div>'
+ +'<div><div class="sh"><h2>Choose a date</h2></div><div class="dates">'+dates+'</div></div>'
+ +'<div><div class="sh" style="margin-bottom:8px"><h2>Morning</h2></div><div class="slots">'+AM.map(function(s){return slotBtn(S,s);}).join('')+'</div></div>'
+ +'<div><div class="sh" style="margin-bottom:8px"><h2>Afternoon</h2></div><div class="slots">'+PM.map(function(s){return slotBtn(S,s);}).join('')+'</div></div>'
+ +'<div class="legend"><span><i style="background:#fff;border:1.5px solid #C9D3E1"></i>Available</span><span><i style="background:var(--navy)"></i>Selected</span><span><i style="background:repeating-linear-gradient(135deg,#F1F4F8 0 3px,#DDE3EC 3px 6px);border:1.5px dashed #CBD3DF"></i>Full</span></div>'
+ +'</div></div>'+foot;
+}
+function vToken(S){
+ var b=bk(S,S.focus)||upcoming(S)[0]||S.bookings[0],v=SV[b.svc];
+ var isLive=b.today&&b.status==='active';
+ var pos=isLive?('#'+(b.ahead+1)+' in line'):'Live on the day';
+ var wait=isLive?(b.ahead?'≈ '+waitMin(b)+' min':'Your turn'):'≈ '+(4*v.avg)+' min typical';
+ var fresh=S.fx.fresh;
+ return '<div class="view'+(S.fx.enter?' enter':'')+'" style="padding-top:56px">'
+ +'<div class="ok"><span class="big">'+I('check',32)+'</span><h1>'+(fresh?'Booking confirmed':'Your digital token')+'</h1><p class="t-sub">Show this token at the '+v.office+'.</p></div>'
+ +'<div class="pad"><section class="ticket" aria-label="Digital token"><div class="top"><div class="lbl">Your token</div><div class="tok" aria-label="Token '+b.token+'">'+tokHTML(b.token)+'</div></div><div class="tear"></div>'
+ +'<div class="rows"><div class="row"><span>Service</span><b>'+v.name+'</b></div><div class="row"><span>Date and time</span><b>'+b.dl+' · '+b.slot+'</b></div><div class="row"><span>Queue position</span><b>'+pos+'</b></div><div class="row"><span>Estimated wait</span><b>'+wait+'</b></div></div></section><div class="t-sub" style="display:flex;gap:8px;align-items:flex-start;margin-top:16px;font-size:var(--f-sm);line-height:1.45"><span style="color:var(--teal-deep);margin-top:1px">'+I('info',18)+'</span><span>Arrive 5 minutes before your slot. Tokens are released if you haven’t checked in after 10 minutes.</span></div></div>'
+ +'</div><div class="ft"><button class="btn" data-a="open-queue" data-v="'+b.id+'">View live queue'+I('chevR',20)+'</button><button class="btn bsec sm" data-a="home">Back to home</button></div>';
+}
+function vQueueEmpty(S,b){
+ var future=b&&b.status==='confirmed';
+ return '<div class="view'+(S.fx.enter?' enter':'')+'">'+hdr('Live queue',true)
+ +'<div class="empty" style="margin-top:32px"><div class="art">'+I('ticket',40)+'</div><h2>No active token</h2>'
+ +'<p>'+(future?'Live tracking for '+b.token+' opens on '+b.dl+', 30 minutes before your slot.':'Book a service slot and your place in line will show up here.')+'</p>'
+ +'<button class="btn" style="max-width:280px" data-a="'+(future?'tab':'home')+'" data-v="bookings">'+(future?'Go to My Bookings':'Browse services')+'</button></div></div>';
+}
+function vQueue(S){
+ var b=bk(S,S.focus);
+ if(S.skel){
+  return '<div class="view">'+hdr('Live queue',true)+'<div class="pad" style="display:flex;flex-direction:column;gap:16px" aria-busy="true" aria-label="Loading queue"><div class="sk" style="height:152px;border-radius:28px"></div><div class="sk" style="height:80px"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="sk" style="height:96px"></div><div class="sk" style="height:96px"></div></div><div class="sk" style="height:96px"></div></div></div>';
+ }
+ if(!b||b.status!=='active')return vQueueEmpty(S,b);
+ var v=SV[b.svc],ph=phase(b),turn=ph==='turn';
+ var pc=Math.round((b.start-b.ahead)/b.start*100);
+ var serving=b.token.split('-')[0]+'-'+pad(b.n-b.ahead);
+ var status=turn?'Your turn':(ph==='next'?'You’re next':'In queue');
+ var main=turn
+  ?'<div class="qhero turn" id="qh"><div class="qrow"><span class="lbl">Your token</span><span class="pill on-d">'+I('check',14)+' Your turn</span></div><div class="tok" style="margin:8px 0 12px">'+tokHTML(b.token)+'</div><div style="position:relative;z-index:1;font-weight:600;font-size:var(--f-body)">Please go to '+v.counter+' at the '+v.office+'.</div></div>'
+  :'<div class="qhero" id="qh"><div class="qrow"><span class="lbl">Your token</span><span class="pill on-d" id="qst">'+status+'</span></div><div class="tok" style="margin:8px 0 12px">'+tokHTML(b.token)+'</div><div style="position:relative;z-index:1;color:#D3DEEC;font-size:var(--f-md)">'+v.name+' · '+b.slot+'</div></div>';
+ var serv='<section class="card serving"><span class="live" aria-hidden="true"></span><div class="grow"><div class="lbl">Now serving</div><b class="n" id="qs">'+serving+'</b></div><span class="pill p-navy">'+v.counter+'</span></section>';
+ var tiles='<div class="tiles"><section class="card tile"><div class="lbl">People ahead</div><b id="qa">'+b.ahead+'</b></section><section class="card tile"><div class="lbl">Est. wait</div><b id="qw">'+(b.ahead?waitMin(b)+'<small>min</small>':'Now')+'</b></section></div>';
+ var prog='<section class="card prog"><div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:var(--f-body)">Queue progress</b><span class="t-sub" id="qp">'+pc+'%</span></div><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pc+'" id="qbar"><i style="width:'+pc+'%"></i></div><div class="t-sub" style="font-size:var(--f-sm)" id="qpt">'+(b.start-b.ahead)+' of '+b.start+' people ahead have been served</div></section>';
+ var foot=turn
+  ?'<div class="ft"><button class="btn teal" data-a="here">I’m at the counter'+I('check',20)+'</button></div>'
+  :'<div class="ft"><div class="cap">Simulated queue · prototype only</div><button class="btn dng sm" data-a="leave" data-v="'+b.id+'">Leave queue</button></div>';
+ return '<div class="view'+(S.fx.enter?' enter':'')+'">'+hdr('Live queue',true)+'<div class="pad" style="display:flex;flex-direction:column;gap:12px;padding-bottom:8px">'+main+serv+tiles+prog+'</div></div>'+foot;
+}
+function bkCard(S,b){
+ var v=SV[b.svc],up=b.status==='active'||b.status==='confirmed',acts='';
+ if(up)acts='<div class="acts"><button class="btn dng sm" data-a="cancel" data-v="'+b.id+'">Cancel</button><button class="btn sm" data-a="'+(b.status==='active'?'open-queue':'open-token')+'" data-v="'+b.id+'">'+(b.status==='active'?'Track queue':'View token')+'</button></div>';
+ else acts='<button class="btn bsec sm" data-a="again" data-v="'+b.svc+'">Book again</button>';
+ return '<article class="card bk'+(S.hl===b.id?' hl':'')+'"><div class="bk-h"><span class="ico'+(b.status==='active'?' t':'')+'">'+I(v.icon,24)+'</span><div class="grow"><b>'+v.name+'</b><span class="s">'+b.dl+' · '+b.slot+'</span></div>'+pill(b.status)+'</div>'
+ +'<div class="bk-m"><span>'+I('ticket',16)+'Token&nbsp;<b>'+b.token+'</b></span><span>'+I('pin',16)+v.office+'</span></div>'+acts+'</article>';
+}
+function vBookings(S){
+ var up=upcoming(S),hi=history(S),list=S.bookTab==='upcoming'?up:hi,body;
+ if(list.length){body='<div style="display:flex;flex-direction:column;gap:12px;padding-bottom:16px">'+list.map(function(b){return bkCard(S,b);}).join('')+'</div>';}
+ else if(S.bookTab==='upcoming'){body='<div class="empty"><div class="art">'+I('cal',40)+'</div><h2>No upcoming bookings</h2><p>Book a campus service and your token will appear here.</p><button class="btn sm" style="max-width:240px" data-a="home">Browse services</button></div>';}
+ else{body='<div class="empty"><div class="art">'+I('inbox',40)+'</div><h2>No booking history yet</h2><p>Completed and cancelled visits will be listed here.</p><button class="btn sm" style="max-width:240px" data-a="home">Book a service</button></div>';}
+ return '<div class="view'+(S.fx.enter?' enter':'')+'">'+hdr('My bookings',false)
+ +'<div class="pad" style="display:flex;flex-direction:column;gap:16px"><div class="seg"><button data-a="seg" data-v="upcoming" aria-pressed="'+(S.bookTab==='upcoming')+'">Upcoming'+(up.length?'<em>'+up.length+'</em>':'')+'</button><button data-a="seg" data-v="history" aria-pressed="'+(S.bookTab==='history')+'">History</button></div>'+body+'</div></div>'+tabbar('bookings');
+}
+function sw(k,on,label){return '<button class="sw" role="switch" aria-checked="'+on+'" aria-label="'+label+'" data-a="pref" data-v="'+k+'"></button>';}
+function vProfile(S){
+ return '<div class="view'+(S.fx.enter?' enter':'')+'">'+hdr('Profile',false)
+ +'<div class="pad" style="display:flex;flex-direction:column;gap:12px;padding-bottom:16px">'
+ +'<section class="card prof"><span class="big" aria-hidden="true">AS</span><div class="grow"><b>Ananya Sen</b><span class="t-sub">Computer Science · Year 3</span><div style="margin-top:8px"><span class="pill p-navy">'+I('id',14)+'Student ID · 2023-XXX-0000</span></div></div></section>'
+ +'<div><div class="lbl" style="margin:0 0 8px 4px">Contact</div><section class="card list"><div class="li"><span class="k">'+I('mail',20)+'</span><span class="t">Email</span><span class="v">ananya.sen@campus.example</span></div><div class="li"><span class="k">'+I('phone',20)+'</span><span class="t">Phone</span><span class="v">+91 98XXX XXXXX</span></div></section></div>'
+ +'<div><div class="lbl" style="margin:0 0 8px 4px">Notifications</div><section class="card list">'
+ +'<div class="li"><span class="t">Queue position updates</span><span class="swb">'+sw('queue',S.prefs.queue,'Queue position updates')+'</span></div>'
+ +'<div class="li"><span class="t">Your turn alerts</span><span class="swb">'+sw('turn',S.prefs.turn,'Your turn alerts')+'</span></div>'
+ +'<div class="li"><span class="t">Booking reminders</span><span class="swb">'+sw('remind',S.prefs.remind,'Booking reminders')+'</span></div></section></div>'
+ +'<div><div class="lbl" style="margin:0 0 8px 4px">Settings</div><section class="card list">'
+ +'<div class="li"><span class="k">'+I('type',20)+'</span><span class="t">Larger text</span><span class="swb">'+sw('lg',S.lg,'Larger text')+'</span></div>'
+ +'<div class="li"><span class="k">'+I('motion',20)+'</span><span class="t">Reduce motion</span><span class="swb">'+sw('rm',S.rm,'Reduce motion')+'</span></div></section></div>'
+ +'<button class="btn dng sm" data-a="logout">'+I('out',20)+'Log out</button></div></div>'+tabbar('profile');
+}
+function vSheet(S){
+ var s=S.sheet;if(!s)return '';
+ var b=bk(S,s.id),v=b?SV[b.svc]:null,h='';
+ if(s.type==='leave')h='<span class="ico" style="background:var(--err-tint);color:var(--err-deep)">'+I('alert',24)+'</span><h2 id="sht">Leave the queue?</h2><p>Your token '+b.token+' will be cancelled and the '+b.slot+' slot released. You can book again at any time.</p><button class="btn bsec" data-a="sheet-close">Stay in queue</button><button class="btn dngf" data-a="sheet-ok">Leave queue</button>';
+ if(s.type==='cancel')h='<span class="ico" style="background:var(--err-tint);color:var(--err-deep)">'+I('alert',24)+'</span><h2 id="sht">Cancel this booking?</h2><p>'+v.name+' on '+b.dl+' at '+b.slot+' ('+b.token+') will be cancelled. This can’t be undone.</p><button class="btn bsec" data-a="sheet-close">Keep booking</button><button class="btn dngf" data-a="sheet-ok">Cancel booking</button>';
+ if(s.type==='logout')h='<span class="ico">'+I('out',24)+'</span><h2 id="sht">Log out of QueueLess?</h2><p>You’ll need to log in again to see your bookings and token.</p><button class="btn bsec" data-a="sheet-close">Stay logged in</button><button class="btn" data-a="sheet-ok">Log out</button>';
+ return '<div class="scrim" data-a="sheet-close"></div><div class="sheet'+(S.fx.sheet?' fx':'')+'" role="dialog" aria-modal="true" aria-labelledby="sht"><div class="grab"></div>'+h+'</div>';
+}
+function phoneInner(S){
+ var v,dark=S.screen==='home';
+ switch(S.screen){case'home':v=vHome(S);break;case'details':v=vDetails(S);break;case'slots':v=vSlots(S);break;case'token':v=vToken(S);break;case'queue':v=vQueue(S);break;case'bookings':v=vBookings(S);break;default:v=vProfile(S);}
+ var ov='';
+ if(S.push)ov+='<button class="push'+(S.fx.push?' fx':'')+'" data-a="push-close" role="alert">'+logoD(32)+'<div class="grow"><b>'+S.push.t+'</b><span class="m">'+S.push.m+'</span></div><small>now</small></button>';
+ ov+=vSheet(S);
+ if(S.toast)ov+='<div class="toast'+(S.fx.toast?' fx':'')+'" role="status"><span class="c">'+I('check',14)+'</span>'+S.toast+'</div>';
+ if(S.loading)ov+='<div class="load" role="status"><span class="spin"></span><b>'+S.loading+'</b></div>';
+ if(S.out)ov+='<div class="out">'+logo(64)+'<h2>You’ve been logged out</h2><p>Log back in to see your bookings and queue token.</p><button class="btn" data-a="login">Log in as Ananya</button></div>';
+ return '<div class="screen">'+statusBar(dark)+v+ov+'<div class="hi"></div></div>';
+}
+
+/* ---------- prototype controller ---------- */
+var app=document.getElementById('app');
+function render(){
+ var old=app.querySelector('.view'),st=old?old.scrollTop:0,prev=app.dataset.screen;
+ app.innerHTML=phoneInner(S);
+ app.className='phone q'+(S.lg?' lg':'')+(S.rm?' rm':'');
+ app.dataset.screen=S.screen;
+ var vw=app.querySelector('.view');
+ if(vw&&prev===S.screen&&!S.fx.enter)vw.scrollTop=st;
+ S.fx={};
+ if(S.screen==='bookings'&&F.leave&&!F.bookings){F.bookings=true;}
+ if(S.sheet){var b=app.querySelector('.sheet .btn');if(b)b.focus({preventScroll:true});}
+ guide();
+}
+function nav(screen,opts){S.err=null;S.fx={enter:true};S.screen=screen;}
+function go(screen){S.stack.push(S.screen);nav(screen);render();}
+function back(){S.screen=S.stack.pop()||'home';S.err=null;S.fx={enter:true};if(S.screen!=='slots')S.slot=S.screen==='details'?null:S.slot;render();}
+function tabTo(k){S.stack=[];S.err=null;S.fx={enter:true};S.screen=k;if(k==='bookings'&&!S.hlKeep){S.bookTab='upcoming';}S.hlKeep=false;render();}
+function toast(m){S.toast=m;S.fx.toast=true;clearTimeout(T.toast);T.toast=setTimeout(function(){S.toast=null;render();},2800);}
+function load(msg,ms,fn){S.loading=msg;render();T.load=setTimeout(function(){S.loading=null;fn();render();},ms);}
+function finish(b,st){S.bookings=[b].concat(S.bookings.filter(function(x){return x!==b;}));b.status=st;}
+
+function act(a,v){
+ if(S.loading||S.out&&a!=='login')return;
+ switch(a){
+  case'svc':S.service=v;S.dateIdx=0;S.slot=null;if(v==='fee')F.fee=true;go('details');break;
+  case'to-slots':F.cont=true;go('slots');break;
+  case'date':S.dateIdx=+v;S.slot=null;S.err=null;render();break;
+  case'slot':
+   if(FULL[S.dateIdx].indexOf(v)>=0){S.err={kind:'full',slot:v};if(v==='09:30 AM')F.err=true;render();
+    var el=app.querySelector('.sl[data-v="'+v+'"]');if(el){el.classList.add('shake');}}
+   else{S.slot=v;S.err=null;if(v==='10:30 AM')F.sel=true;render();}
+   break;
+  case'noop':break;
+  case'confirm':
+   if(!S.slot)break;
+   var ab=activeB(S);
+   if(ab&&S.dateIdx===0){S.err={kind:'active',token:ab.token};render();break;}
+   load('Reserving your slot…',1300,function(){
+    var k=S.service,sv=SV[k];S.ctr[k]=S.ctr[k]+1;var n=S.ctr[k];
+    var today=S.dateIdx===0;
+    var b={id:'n'+Date.now(),svc:k,dl:DATES[S.dateIdx].l,slot:S.slot,token:sv.pre+'-'+pad(n),n:n,status:today?'active':'confirmed',today:today,ahead:4,start:4};
+    S.bookings.unshift(b);S.focus=b.id;S.stack=['home'];S.screen='token';S.slot=null;S.err=null;S.fx={enter:true,fresh:true};
+    F.conf=true;
+   });
+   break;
+  case'open-token':S.focus=v;go('token');break;
+  case'open-queue':
+   S.focus=v||S.focus;S.skel=true;go('queue');
+   T.skel=setTimeout(function(){S.skel=false;var b=bk(S,S.focus);if(b&&b.status==='active')F.queue=true;S.fx={};render();},800);
+   break;
+  case'back':back();break;
+  case'home':tabTo('home');break;
+  case'tab':tabTo(v);break;
+  case'seg':S.bookTab=v;render();break;
+  case'leave':S.sheet={type:'leave',id:v};S.fx.sheet=true;render();break;
+  case'cancel':S.sheet={type:'cancel',id:v};S.fx.sheet=true;render();break;
+  case'logout':S.sheet={type:'logout'};S.fx.sheet=true;render();break;
+  case'sheet-close':S.sheet=null;render();break;
+  case'sheet-ok':{
+   var sh=S.sheet;S.sheet=null;
+   if(sh.type==='leave'){load('Leaving queue…',1000,function(){var b=bk(S,sh.id);finish(b,'left');F.leave=true;S.hl=b.id;S.bookTab='history';S.hlKeep=true;S.stack=[];S.screen='bookings';S.fx={enter:true};toast('You left the queue. Slot released.');});}
+   else if(sh.type==='cancel'){load('Cancelling booking…',900,function(){var b=bk(S,sh.id);var live=b.status==='active';finish(b,'cancelled');toast('Booking '+b.token+' cancelled');});}
+   else{S.out=true;render();}
+   break;}
+  case'here':load('Checking you in…',900,function(){var b=activeB(S);if(b){finish(b,'completed');S.hl=b.id;S.bookTab='history';S.hlKeep=true;}S.stack=[];S.screen='bookings';S.fx={enter:true};toast('Visit complete. Thanks for using QueueLess.');});break;
+  case'again':S.service=v;S.dateIdx=0;S.slot=null;go('details');break;
+  case'pref':if(v==='lg')S.lg=!S.lg;else if(v==='rm')S.rm=!S.rm;else S.prefs[v]=!S.prefs[v];render();break;
+  case'login':S.out=false;tabTo('home');break;
+  case'push-close':S.push=null;render();break;
+ }
+}
+app.addEventListener('click',function(e){var el=e.target.closest('[data-a]');if(!el)return;act(el.dataset.a,el.dataset.v);});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&S.sheet&&!S.loading){S.sheet=null;render();}});
+document.addEventListener('animationend',function(e){if(e.animationName==='shake')e.target.classList.remove('shake');});
+
+/* live queue simulation: one person served every 3.5 s while Live Queue is open */
+T.tick=setInterval(function(){
+ if(S.screen!=='queue'||S.skel||S.loading||S.sheet||S.out)return;
+ var b=activeB(S);if(!b||b.ahead<=0||S.focus!==b.id)return;
+ var p0=phase(b);b.ahead--;F.moved=true;var p1=phase(b);
+ if(p1==='turn'){S.push={t:'QueueLess · '+SV[b.svc].name,m:'It’s your turn. Please go to '+SV[b.svc].counter+'.'};S.fx.push=true;clearTimeout(T.push);T.push=setTimeout(function(){S.push=null;render();},6000);}
+ if(p0!==p1){render();return;}
+ var set=function(id,t){var el=document.getElementById(id);if(el&&el.textContent!==t){el.innerHTML=t;el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}};
+ var pc=Math.round((b.start-b.ahead)/b.start*100);
+ set('qa',String(b.ahead));set('qw',b.ahead?waitMin(b)+'<small>min</small>':'Now');set('qs',b.token.split('-')[0]+'-'+pad(b.n-b.ahead));
+ var bar=document.getElementById('qbar');if(bar){bar.setAttribute('aria-valuenow',pc);bar.firstChild.style.width=pc+'%';}
+ var qp=document.getElementById('qp');if(qp)qp.textContent=pc+'%';
+ var qpt=document.getElementById('qpt');if(qpt)qpt.textContent=(b.start-b.ahead)+' of '+b.start+' people ahead have been served';
+ var st=document.getElementById('qst');if(st)st.textContent=p1==='next'?'You’re next':'In queue';
+ guide();
+},3500);
+
+/* ---------- guide ---------- */
+var STEPS=[['fee','Tap Fee Payment on the home screen'],['cont','Read the details, then Continue to booking'],['err','Tap 09:30 AM to see the unavailable-slot error'],['sel','Select 10:30 AM'],['conf','Confirm the booking to get your digital token'],['queue','Tap View live queue'],['moved','Watch the queue position decrease'],['leave','Leave the queue (you will be asked to confirm)'],['bookings','Find the booking in My Bookings']];
+function guide(){
+ var cur=-1;STEPS.forEach(function(s,i){if(!F[s[0]]&&cur<0)cur=i;});
+ document.getElementById('steps').innerHTML=STEPS.map(function(s,i){var d=!!F[s[0]];return '<li class="'+(d?'done':(i===cur?'now':''))+'"><span class="dot">'+(d?'✓':(i+1))+'</span><span>'+s[1]+(d?'<span class="sr" style="position:absolute;left:-9999px"> (done)</span>':'')+'</span></li>';}).join('');
+}
+document.getElementById('reset').addEventListener('click',function(){
+ Object.keys(T).forEach(function(k){if(k!=='tick')clearTimeout(T[k]);});
+ S=seed();F={};render();
+ var vw=app.querySelector('.view');if(vw)vw.scrollTop=0;
+});
+
+/* ---------- fit phone to viewport ---------- */
+function fit(){
+ var stage=document.getElementById('stage'),box=document.getElementById('phoneBox');
+ if(!stage.offsetParent)return;
+ var aw=stage.clientWidth-8,ah=window.innerHeight-64-48;
+ var s=Math.min(1,aw/413);
+ if(window.innerWidth>1000)s=Math.min(s,Math.max(.85,ah/872));
+ s=Math.max(.5,s);
+ box.style.width=(413*s)+'px';box.style.height=(872*s)+'px';
+ app.style.transform='scale('+s+')';
+}
+window.addEventListener('resize',fit);
+
+/* ---------- artboards (static renders of the same views) ---------- */
+function mk(o){var s=seed();for(var k in o)s[k]=o[k];return s;}
+function withActive(s,ahead){s.bookings.unshift({id:'a1',svc:'fee',dl:'Today, 18 Nov',slot:'10:30 AM',token:'FP-024',n:24,status:'active',today:true,ahead:ahead,start:4});s.focus='a1';return s;}
+function fig(title,note,s){return '<figure class="fig"><div class="box"><div class="phone q" inert role="img" aria-label="'+title+'">'+phoneInner(s)+'</div></div><figcaption><b>'+title+'</b>'+note+'</figcaption></figure>';}
+(function buildArt(){
+ var s1=mk({screen:'home'});
+ var s2=mk({screen:'details',service:'fee'});
+ var s3=mk({screen:'slots',service:'fee',slot:'10:30 AM'});
+ var s4=withActive(mk({screen:'token',fx:{fresh:true}}),4);s4.fx={fresh:true};
+ var s5=withActive(mk({screen:'queue'}),3);
+ var s6=withActive(mk({screen:'bookings'}),3);
+ var s7=mk({screen:'profile'});
+ document.getElementById('abScreens').innerHTML=
+  fig('Screen 1 · Home Dashboard','Greeting, service categories and the upcoming booking.',s1)
+ +fig('Screen 2 · Service Details','Wait time and documents before committing.',s2)
+ +fig('Screen 3 · Slot Booking','Date strip, slot states and a summary footer.',s3)
+ +fig('Screen 4 · Token Confirmation','The token is the largest element on screen.',s4)
+ +fig('Screen 5 · Live Queue Tracking','Now serving, people ahead, progress, leave option.',s5)
+ +fig('Screen 6 · My Bookings','Upcoming and history with status and cancel.',s6)
+ +fig('Screen 7 · Profile','Student info, contact, notifications and settings.',s7);
+ var l=mk({screen:'slots',service:'fee',slot:'10:30 AM',loading:'Reserving your slot…'});
+ var e=mk({screen:'slots',service:'fee',err:{kind:'full',slot:'09:30 AM'}});
+ var h=mk({screen:'bookings',bookings:[],bookTab:'history'});
+ var t=withActive(mk({screen:'queue',push:{t:'QueueLess · Fee Payment',m:'It’s your turn. Please go to Counter 3.'}}),0);
+ var n=mk({screen:'queue',focus:null});
+ document.getElementById('abStates').innerHTML=
+  fig('Loading state','Overlay while a slot is reserved.',l)
+ +fig('Unavailable slot error','09:30 AM tapped; reason and alternatives shown.',e)
+ +fig('Empty booking history','Explains what appears here and offers a next step.',h)
+ +fig('Your turn notification','Push banner over a teal “Your turn” card.',t)
+ +fig('No active token','Live queue with nothing to track.',n);
+ document.getElementById('iconSpec').innerHTML=['home','ticket','user','card','file','gov','food','clock','cal','pin','users','bell','check','alert','id','mail','phone','sliders'].map(function(k){return '<span>'+I(k,24)+'</span>';}).join('');
+})();
+
+/* ---------- section tabs ---------- */
+var secs=['prototype','artboards','case-study'];
+function showSec(id,push){
+ if(secs.indexOf(id)<0)id='prototype';
+ secs.forEach(function(s){var on=s===id;document.getElementById('sec-'+s).hidden=!on;var t=document.getElementById('tab-'+s);t.setAttribute('aria-selected',on);t.tabIndex=on?0:-1;});
+ if(push){try{history.replaceState(null,'','#'+id);}catch(e){location.hash=id;}}
+ window.scrollTo(0,0);fit();
+}
+document.querySelector('.tabs').addEventListener('click',function(e){var b=e.target.closest('[data-sec]');if(b)showSec(b.dataset.sec,true);});
+window.addEventListener('hashchange',function(){var h=location.hash.slice(1);if(secs.indexOf(h)>=0)showSec(h,false);});
+
+render();
+var h0=location.hash.slice(1);
+showSec(secs.indexOf(h0)>=0?h0:'prototype',false);
+fit();
+})();
+</script>
+
+</body></html>
